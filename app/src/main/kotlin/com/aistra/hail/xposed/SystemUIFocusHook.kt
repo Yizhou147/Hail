@@ -26,11 +26,50 @@ class SystemUIFocusHook(classLoader: ClassLoader) : BaseHook(classLoader) {
         val clazz = runCatching { classLoader.loadClass(TARGET_CLASS) }.getOrNull()
         if (clazz == null) {
             Log.w(TAG, "target class not found: $TARGET_CLASS")
+            scanCandidates()
             return
         }
         Log.i(TAG, "target class found: $TARGET_CLASS")
         hookReturnTrue(clazz, "canShowFocus", Context::class.java, String::class.java)
         hookReturnTrue(clazz, "canCustomFocus", String::class.java)
+    }
+
+    /**
+     * 枚举 SystemUI classLoader 中所有 dex 的类名，找出与焦点通知/超级岛
+     * 白名单相关的候选类（不同 HyperOS 版本类名可能不同），供后续适配。
+     */
+    private fun scanCandidates() {
+        Thread {
+            try {
+                val pathListField =
+                    Class.forName("dalvik.system.BaseDexClassLoader").getDeclaredField("pathList")
+                pathListField.isAccessible = true
+                val pathList = pathListField.get(classLoader)
+                val elementsField = pathList.javaClass.getDeclaredField("dexElements")
+                elementsField.isAccessible = true
+                val elements = elementsField.get(pathList) as Array<*>
+                var scanned = 0
+                for (el in elements) {
+                    val dexFileField = el.javaClass.getDeclaredField("dexFile")
+                    dexFileField.isAccessible = true
+                    val dexFile = dexFileField.get(el) ?: continue
+                    val names = dexFile.javaClass.getMethod("getClassNameList").invoke(dexFile) as Array<*>
+                    for (n in names) {
+                        scanned++
+                        val name = n.toString()
+                        if (name.startsWith("miui.systemui.") &&
+                            (name.contains("NotificationSettings") || name.contains("Focus")
+                                || name.contains("Island"))
+                        ) {
+                            Log.i(TAG, "candidate: $name")
+                        }
+                    }
+                }
+                Log.i(TAG, "scan done, $scanned classes scanned")
+            } catch (e: Throwable) {
+                Log.e(TAG, "scan failed: $e")
+            }
+        }.start()
     }
 
     private fun hookReturnTrue(clazz: Class<*>, methodName: String, vararg params: Class<*>) {
