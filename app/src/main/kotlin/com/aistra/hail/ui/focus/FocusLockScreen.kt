@@ -1,11 +1,13 @@
 package com.aistra.hail.ui.focus
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -37,7 +39,19 @@ fun FocusLockScreen(onFinished: () -> Unit) {
 
     AppTheme {
         Column(
-            modifier = Modifier.fillMaxSize().padding(32.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                // 不透明背景遮住下层内容
+                .background(MaterialTheme.colorScheme.background)
+                // 消费所有触摸事件，阻止点击穿透到下层页面
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            awaitPointerEvent().changes.forEach { it.consume() }
+                        }
+                    }
+                }
+                .padding(32.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

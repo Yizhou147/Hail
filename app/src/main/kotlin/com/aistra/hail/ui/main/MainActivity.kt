@@ -144,7 +144,8 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
     private fun showFocusLock() {
         if (focusLockView != null) return
         val view = ComposeView(this).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            // 移除即释放，避免 Composition 在 removeView 后仍存活造成泄漏
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
             setContent {
                 AppTheme { FocusLockScreen(onFinished = { updateFocusLock() }) }
             }
