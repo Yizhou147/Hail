@@ -78,7 +78,7 @@ fun FocusTimeDialog(
         confirmButton = {
             TextButton(onClick = {
                 val minutes = input.toIntOrNull()
-                if (minutes in FocusData.MIN_MINUTES..FocusData.MAX_MINUTES) onStart(minutes)
+                if (minutes != null && minutes in FocusData.MIN_MINUTES..FocusData.MAX_MINUTES) onStart(minutes)
                 else HUI.showToast(R.string.focus_time_invalid)
             }) { Text(text = stringResource(R.string.action_start_focus)) }
         },

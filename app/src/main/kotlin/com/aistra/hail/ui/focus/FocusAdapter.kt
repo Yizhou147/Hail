@@ -63,13 +63,13 @@ class FocusAdapter(
             val info = HPackages.getApplicationInfoOrNull(pkg)
             if (info != null) {
                 loadIconJob = AppIconCache.loadIconBitmapAsync(
-                    view.context, info, HPackages.myUserId, appIcon, false
+                    itemView.context, info, HPackages.myUserId, appIcon, false
                 )
             } else {
-                appIcon.setImageDrawable(view.context.packageManager.defaultActivityIcon)
+                appIcon.setImageDrawable(itemView.context.packageManager.defaultActivityIcon)
                 appIcon.colorFilter = null
             }
-            val name = info?.loadLabel(view.context.packageManager) ?: pkg
+            val name = info?.loadLabel(itemView.context.packageManager) ?: pkg
             appName.text = name
             appName.setTextColor(
                 if (pkg in selectedList) MaterialColors.getColor(appName, androidx.appcompat.R.attr.colorPrimary)

@@ -154,7 +154,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         )
         focusLockView = view
         appbar.isVisible = false
-        bottomNav?.isVisible = false
+        binding.bottomNav?.isVisible = false
         fab.hide()
     }
 
@@ -162,7 +162,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         focusLockView?.let { (binding.root as ViewGroup).removeView(it) }
         focusLockView = null
         appbar.isVisible = true
-        bottomNav?.isVisible = true
+        binding.bottomNav?.isVisible = true
         if (fab.tag == true) fab.show() else fab.hide()
     }
 
