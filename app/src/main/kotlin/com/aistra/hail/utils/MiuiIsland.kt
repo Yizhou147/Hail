@@ -19,7 +19,7 @@ import org.json.JSONObject
 object MiuiIsland {
     private const val KEY_PARAM = "miui.focus.param"
     private const val KEY_PICS = "miui.focus.pics"
-    private const val PIC_SMALL = "miui.focus.pic_small"
+    private const val PIC_SECOND = "miui.focus.pic_second"
 
     /**
      * 构建岛通知扩展参数（对齐官方 HyperOS 3 param_v2 结构）。
@@ -49,14 +49,14 @@ object MiuiIsland {
                         .put("islandProperty", 1)
                         .put(
                             "bigIslandArea", JSONObject()
-                                // 大岛 A 区：图文组件（图片 + 文本组件）
+                                // 大岛 A 区（左侧）：秒表图标 + 倒计时
                                 .put(
                                     "imageTextInfoLeft", JSONObject()
                                         .put("type", 1)
                                         .put(
                                             "picInfo", JSONObject()
                                                 .put("type", 1)
-                                                .put("pic", PIC_SMALL)
+                                                .put("pic", PIC_SECOND)
                                         )
                                         .apply {
                                             // 官方文档文本组件 key 为 "miui.focus.paramtextInfo"（疑似笔误），
@@ -71,20 +71,25 @@ object MiuiIsland {
                                             put("textInfo", text)
                                         }
                                 )
-                                // 大岛 B 区：图片组件
-                                .put(
-                                    "picInfo", JSONObject()
-                                        .put("type", 1)
-                                        .put("pic", PIC_SMALL)
-                                )
+                                // 大岛 B 区（右侧）：倒计时文本
+                                .apply {
+                                    val right = JSONObject()
+                                        .put("frontTitle", frontTitle)
+                                        .put("title", remainingText)
+                                        .put("content", "")
+                                        .put("useHighLight", false)
+                                    put("miui.focus.paramtextInfo", right)
+                                    put("paramtextInfo", right)
+                                    put("textInfo", right)
+                                }
                         )
-                        // 小岛：图片组件
+                        // 小岛：秒表图标
                         .put(
                             "smallIslandArea", JSONObject()
                                 .put(
                                     "picInfo", JSONObject()
                                         .put("type", 1)
-                                        .put("pic", PIC_SMALL)
+                                        .put("pic", PIC_SECOND)
                                 )
                         )
                 )
@@ -105,7 +110,7 @@ object MiuiIsland {
         bundle.putString(KEY_PARAM, param.toString())
         val pics = Bundle()
         pics.putParcelable(
-            PIC_SMALL, Icon.createWithResource(context, R.mipmap.ic_launcher)
+            PIC_SECOND, Icon.createWithResource(context, R.drawable.ic_outline_timer)
         )
         bundle.putBundle(KEY_PICS, pics)
         return bundle
