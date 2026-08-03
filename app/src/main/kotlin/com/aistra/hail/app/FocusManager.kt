@@ -44,17 +44,21 @@ object FocusManager {
         }
         // 快照：记录开始前各应用冻结状态
         val snapshot = FocusData.blacklist.associateWith { AppManager.isAppFrozen(it) }
+        // 先开始会话并启动服务（立即弹通知），避免逐个挂起耗时导致通知延迟十几秒才出现
+        FocusData.beginSession(minutes)
+        startFocusService()
         // 逐个暂停黑名单应用（系统弹窗文案定制为专注模式）
         var suspended = 0
         FocusData.blacklist.forEach {
             if (HShizuku.setAppSuspendedForFocus(it, true)) suspended++
         }
         if (suspended == 0) {
+            // 全部失败：回滚会话并停止服务
+            FocusData.endSession()
+            app.stopService(Intent(app, FocusService::class.java))
             return@withContext app.getString(R.string.operation_failed, app.getString(R.string.permission_denied))
         }
         FocusData.saveSnapshot(snapshot)
-        FocusData.beginSession(minutes)
-        startFocusService()
         // 检测 HyperOS 超级岛权限并记录日志：无权限时系统只显示普通通知（排查用）
         HLog.i("Hail", "Focus started, island permission = ${MiuiIsland.hasFocusPermission(app)}")
         null

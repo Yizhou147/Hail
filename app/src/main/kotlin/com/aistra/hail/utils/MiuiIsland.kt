@@ -87,7 +87,8 @@ object MiuiIsland {
                     "baseInfo", JSONObject()
                         .put("type", 2)
                         .put("title", frontTitle)
-                        .put("content", contentText)
+                        // content 置空：避免与 hintInfo.title 的倒计时在通知卡片上重复显示两行
+                        .put("content", "")
                         .put("colorTitle", "#FF6B00")
                 )
                 .put(
