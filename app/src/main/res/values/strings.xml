@@ -184,4 +184,8 @@
     <string name="focus_import_apps">Import apps</string>
     <string name="focus_add">Add</string>
     <string name="focus_empty_presets">No presets yet</string>
+    <string name="focus_add_to_blacklist">Add to Focus blacklist</string>
+    <string name="focus_remove_from_blacklist">Remove from Focus blacklist</string>
+    <string name="focus_added_to_blacklist">Added to Focus blacklist: %1$s</string>
+    <string name="focus_removed_from_blacklist">Removed from Focus blacklist: %1$s</string>
 </resources>

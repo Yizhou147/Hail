@@ -206,8 +206,12 @@ object HShizuku {
         @RequiresApi(Build.VERSION_CODES.Q) @SuppressLint("PrivateApi") get() = HiddenApiBypass.newInstance(
             Class.forName("android.content.pm.SuspendDialogInfo\$Builder")
         ).let {
+            // setDialogMessage 的参数是 CharSequence，HiddenApiBypass.invoke 按参数精确类型匹配，
+            // 直接传 String 会匹配不到方法抛 NoSuchMethodException，需先用 findMethod 显式指定参数类型
             HiddenApiBypass.invoke(
-                it::class.java, it, "setDialogMessage", app.getString(R.string.focus_suspended_dialog)
+                HiddenApiBypass.findMethod(it::class.java, "setDialogMessage", CharSequence::class.java),
+                it,
+                app.getString(R.string.focus_suspended_dialog)
             )
             // BUTTON_ACTION_NONE = 0：系统弹窗不显示"取消暂停应用"按钮，仅保留"确定"
             HiddenApiBypass.invoke(it::class.java, it, "setNeutralButtonAction", 0 /*BUTTON_ACTION_NONE*/)

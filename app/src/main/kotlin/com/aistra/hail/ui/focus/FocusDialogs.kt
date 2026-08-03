@@ -1,5 +1,7 @@
 package com.aistra.hail.ui.focus
 
+import android.content.Context
+import android.content.pm.ApplicationInfo
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,16 +14,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
 import com.aistra.hail.R
 import com.aistra.hail.app.FocusData
+import com.aistra.hail.utils.AppIconCache
 import com.aistra.hail.utils.HPackages
 import com.aistra.hail.utils.HUI
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** 开始专注的时间设置对话框：数字输入 + 预设快捷选择 + 保存/管理预设 */
 @Composable
@@ -207,30 +213,39 @@ private fun PresetManageDialog(onDismiss: () -> Unit) {
 fun ImportAppsDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
     val pm = context.packageManager
-    val apps = remember {
-        HPackages.getInstalledApplications()
-            .filterNot { FocusData.isInBlacklist(it.packageName) }
-            .sortedBy { it.loadLabel(pm).toString() }
+    // 后台线程加载应用列表，避免主线程枚举 + loadLabel 造成卡顿
+    val apps by produceState<List<ApplicationInfo>?>(initialValue = null) {
+        value = withContext(Dispatchers.Default) {
+            runCatching {
+                HPackages.getInstalledApplications()
+                    .filterNot { FocusData.isInBlacklist(it.packageName) }
+                    .sortedBy { it.loadLabel(pm).toString() }
+            }.getOrNull()
+        }
     }
     val selected = remember { mutableStateListOf<String>() }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.focus_import_apps)) },
         text = {
-            if (apps.isEmpty()) {
-                Text(
+            val list = apps
+            when {
+                list == null -> Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator() }
+
+                list.isEmpty() -> Text(
                     text = stringResource(R.string.nothing_here),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            } else {
-                LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
-                    items(apps, key = { it.packageName }) { info ->
+
+                else -> LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                    items(list, key = { it.packageName }) { info ->
                         val pkg = info.packageName
                         val name = info.loadLabel(pm).toString()
-                        val bitmap = remember(pkg) {
-                            runCatching { pm.getApplicationIcon(info).toBitmap().asImageBitmap() }.getOrNull()
-                        }
+                        val icon = rememberAppIcon(context, info)
                         Row(
                             modifier = Modifier.fillMaxWidth().clickable {
                                 if (pkg in selected) selected.remove(pkg) else selected.add(pkg)
@@ -243,8 +258,8 @@ fun ImportAppsDialog(onDismiss: () -> Unit) {
                                     if (checked) selected.add(pkg) else selected.remove(pkg)
                                 }
                             )
-                            if (bitmap != null) {
-                                Image(bitmap = bitmap, contentDescription = null, modifier = Modifier.size(36.dp))
+                            if (icon != null) {
+                                Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(36.dp))
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(text = name, modifier = Modifier.weight(1f))
@@ -263,4 +278,17 @@ fun ImportAppsDialog(onDismiss: () -> Unit) {
             TextButton(onClick = onDismiss) { Text(text = stringResource(android.R.string.cancel)) }
         }
     )
+}
+
+/** 异步加载应用图标（后台解码，走 AppIconCache 缓存） */
+@Composable
+private fun rememberAppIcon(context: Context, info: ApplicationInfo): ImageBitmap? {
+    val sizePx = with(LocalDensity.current) { 36.dp.toPx() }.toInt()
+    return produceState<ImageBitmap?>(initialValue = null, info) {
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                AppIconCache.getOrLoadBitmap(context, info, HPackages.myUserId, sizePx).asImageBitmap()
+            }.getOrNull()
+        }
+    }.value
 }

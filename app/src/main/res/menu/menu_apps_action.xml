@@ -15,4 +15,7 @@
     <item
         android:id="@+id/action_reinstall"
         android:title="@string/action_reinstall" />
+    <item
+        android:id="@+id/action_focus_blacklist"
+        android:title="@string/focus_add_to_blacklist" />
 </menu>

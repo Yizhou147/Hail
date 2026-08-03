@@ -185,4 +185,8 @@
     <string name="focus_import_apps">导入应用</string>
     <string name="focus_add">添加</string>
     <string name="focus_empty_presets">暂无预设</string>
+    <string name="focus_add_to_blacklist">加入专注黑名单</string>
+    <string name="focus_remove_from_blacklist">移出专注黑名单</string>
+    <string name="focus_added_to_blacklist">已加入专注黑名单：%1$s</string>
+    <string name="focus_removed_from_blacklist">已移出专注黑名单：%1$s</string>
 </resources>

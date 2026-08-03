@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.AppManager
+import com.aistra.hail.app.FocusData
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.FragmentAppsBinding
 import com.aistra.hail.extensions.*
@@ -134,6 +135,11 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
         val viewHolder = ((menuInfo as HRecyclerView.RecyclerViewContextMenuInfo).viewHolder as AppsAdapter.ViewHolder)
         menu.setHeaderTitle(viewHolder.info.loadLabel(activity.packageManager))
         activity.menuInflater.inflate(R.menu.menu_apps_action, menu)
+        // 专注黑名单菜单项：已在黑名单中则显示"移出"，否则显示"加入"
+        menu.findItem(R.id.action_focus_blacklist).setTitle(
+            if (FocusData.isInBlacklist(viewHolder.info.packageName)) R.string.focus_remove_from_blacklist
+            else R.string.focus_add_to_blacklist
+        )
         super.onCreateContextMenu(menu, v, menuInfo)
     }
 
@@ -158,6 +164,16 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
             R.id.action_reinstall -> {
                 if (AppManager.reinstallApp(pkg)) updateAppList()
                 else HUI.showToast(R.string.operation_failed, name)
+            }
+
+            R.id.action_focus_blacklist -> {
+                if (FocusData.isInBlacklist(pkg)) {
+                    FocusData.removeFromBlacklist(pkg)
+                    HUI.showToast(R.string.focus_removed_from_blacklist, name)
+                } else {
+                    FocusData.addToBlacklist(pkg)
+                    HUI.showToast(R.string.focus_added_to_blacklist, name)
+                }
             }
 
             else -> return super.onContextItemSelected(item)
