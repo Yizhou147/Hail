@@ -4,16 +4,18 @@ on:
   push:
     branches:
       - master
+      - self-use
     paths-ignore:
       - '**.md'
       - 'fastlane/**'
       - '.github/**'
       - '!.github/workflows/android.yml'
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: ${{ !startsWith(github.event.head_commit.message, '[skip ci]') && github.repository_owner == 'aistra0528' }}
+    if: ${{ !startsWith(github.event.head_commit.message, '[skip ci]') && (github.repository_owner == 'aistra0528' || github.repository_owner == 'Yizhou147') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,16 +27,21 @@ jobs:
       - name: Build with Gradle
         run: |
           touch signing.properties
-          echo storeFile=../keystore.jks >> signing.properties
-          echo storePassword=${{ secrets.KEYSTORE_PASSWORD }} >> signing.properties
-          echo keyAlias=${{ secrets.KEYSTORE_ALIAS }} >> signing.properties
-          echo keyPassword=${{ secrets.KEYSTORE_ALIAS_PASSWORD }} >> signing.properties
-          echo ${{ secrets.KEYSTORE }} | base64 --decode > keystore.jks
-          ./gradlew assembleRelease
-          echo "filename=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/release/output-metadata.json)" >> $GITHUB_ENV
+          if [ -n "${{ secrets.KEYSTORE }}" ]; then
+            echo storeFile=../keystore.jks >> signing.properties
+            echo storePassword=${{ secrets.KEYSTORE_PASSWORD }} >> signing.properties
+            echo keyAlias=${{ secrets.KEYSTORE_ALIAS }} >> signing.properties
+            echo keyPassword=${{ secrets.KEYSTORE_ALIAS_PASSWORD }} >> signing.properties
+            echo ${{ secrets.KEYSTORE }} | base64 --decode > keystore.jks
+            ./gradlew assembleRelease
+            echo "filename=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/release/output-metadata.json)" >> $GITHUB_ENV
+          else
+            ./gradlew assembleDebug
+            echo "filename=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/debug/output-metadata.json)" >> $GITHUB_ENV
+          fi
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v7.0.1
         with:
           name: ${{ env.filename }}
-          path: app/build/outputs/apk/release/${{ env.filename }}
+          path: app/build/outputs/apk/${{ contains(env.filename, 'debug') && 'debug' || 'release' }}/${{ env.filename }}
           archive: false

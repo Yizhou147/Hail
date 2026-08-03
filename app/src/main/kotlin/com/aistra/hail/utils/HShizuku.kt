@@ -185,7 +185,8 @@ object HShizuku {
         @RequiresApi(Build.VERSION_CODES.Q) @SuppressLint("PrivateApi") get() = HiddenApiBypass.newInstance(
             Class.forName("android.content.pm.SuspendDialogInfo\$Builder")
         ).let {
-            HiddenApiBypass.invoke(it::class.java, it, "setNeutralButtonAction", 1 /*BUTTON_ACTION_UNSUSPEND*/)
+            // BUTTON_ACTION_NONE = 0：系统弹窗不显示"取消暂停应用"按钮，仅保留"确定"
+            HiddenApiBypass.invoke(it::class.java, it, "setNeutralButtonAction", 0 /*BUTTON_ACTION_NONE*/)
             HiddenApiBypass.invoke(it::class.java, it, "build")
         }
 
