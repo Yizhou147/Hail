@@ -66,6 +66,13 @@ object MiuiIsland {
                                         .put("title", remainingText)
                                         .put("content", "")
                                         .put("useHighLight", false)
+                                        // 深浅模式两套文字颜色：岛展开卡片背景固定深色，需用白色文字
+                                        .put("colorTitle", "#FF000000")
+                                        .put("colorTitleDark", "#FFFFFFFF")
+                                        .put("colorContent", "#FF000000")
+                                        .put("colorContentDark", "#FFFFFFFF")
+                                        .put("colorSubContent", "#FF000000")
+                                        .put("colorSubContentDark", "#FFFFFFFF")
                                     // 官方文档文本组件 key 为 "miui.focus.paramtextInfo"（疑似笔误），
                                     // 实际系统版本可能识别无前缀 key，多 key 兜底确保文本渲染。
                                     put("miui.focus.paramtextInfo", right)
@@ -89,8 +96,10 @@ object MiuiIsland {
                         .put("title", frontTitle)
                         // content 置空：避免与 hintInfo.title 的倒计时在通知卡片上重复显示两行
                         .put("content", "")
-                        // 黑色标题（原为橙色 #FF6B00，用户要求不要橙色）
+                        // 标题颜色：通知栏浅色背景用黑色；岛展开卡片背景固定深色，
+                        // 需 colorTitleDark 白色（原为橙色 #FF6B00，用户要求不要橙色）
                         .put("colorTitle", "#FF000000")
+                        .put("colorTitleDark", "#FFFFFFFF")
                 )
                 .put(
                     "hintInfo", JSONObject()
