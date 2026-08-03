@@ -26,9 +26,8 @@ jobs:
           java-version: '21'
       - name: Build with Gradle
         run: |
-          touch signing.properties
           if [ -n "${{ secrets.KEYSTORE }}" ]; then
-            echo storeFile=../keystore.jks >> signing.properties
+            echo storeFile=../keystore.jks > signing.properties
             echo storePassword=${{ secrets.KEYSTORE_PASSWORD }} >> signing.properties
             echo keyAlias=${{ secrets.KEYSTORE_ALIAS }} >> signing.properties
             echo keyPassword=${{ secrets.KEYSTORE_ALIAS_PASSWORD }} >> signing.properties
