@@ -37,8 +37,8 @@ class FocusService : Service() {
                 Thread { FocusManager.restoreAndEnd() }.start()
                 return
             }
-            // 每秒刷新通知：倒计时读秒 + 超级岛胶囊实时更新
-            updateNotification(remaining)
+            // 每秒刷新通知：倒计时读秒（验证版：全程普通通知，不注入焦点参数）
+            updateNotification(remaining, false)
             handler.postDelayed(this, 1000L)
         }
     }
@@ -46,8 +46,8 @@ class FocusService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         HLog.i("Hail", "FocusService onStartCommand at ${System.currentTimeMillis()}")
         createNotificationChannel()
-        // 先以普通样式立即弹出通知，避免主线程阻塞导致通知延迟显示
-        startForeground(100, buildNotification(FocusData.remainingMillis))
+        // 先以普通样式立即弹出通知（验证版：不带焦点参数，验证是否为系统延迟之源）
+        startForeground(100, buildNotification(FocusData.remainingMillis, false))
         HLog.i("Hail", "FocusService startForeground done at ${System.currentTimeMillis()}")
         // 后台查询 HyperOS 焦点通知权限（跨进程调用可能较慢），
         // 通过后立即以岛参数重新发布，让通知上岛
@@ -58,19 +58,19 @@ class FocusService : Service() {
             islandPermission = granted
             if (granted) {
                 HLog.i("Hail", "FocusService posting island update at ${System.currentTimeMillis()}")
-                handler.post { updateNotification(FocusData.remainingMillis) }
+                handler.post { updateNotification(FocusData.remainingMillis, false) }
             }
         }.start()
         handler.post(tickRunnable)
         return START_STICKY
     }
 
-    private fun updateNotification(remaining: Long) {
+    private fun updateNotification(remaining: Long, island: Boolean = islandPermission) {
         val manager = NotificationManagerCompat.from(this)
-        runCatching { manager.notify(100, buildNotification(remaining)) }
+        runCatching { manager.notify(100, buildNotification(remaining, island)) }
     }
 
-    private fun buildNotification(remaining: Long): android.app.Notification {
+    private fun buildNotification(remaining: Long, island: Boolean = islandPermission): android.app.Notification {
         val contentIntent = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE
         )
