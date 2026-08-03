@@ -234,8 +234,12 @@ fun ImportAppsDialog(onDismiss: () -> Unit) {
     // 剪贴板解析结果（null=尚未解析/解析中）
     var clipboardPackages by remember { mutableStateOf<List<String>?>(null) }
     LaunchedEffect(mode) {
-        if (mode == 1 && clipboardPackages == null) {
-            clipboardPackages = withContext(Dispatchers.Default) { parseClipboardPackages() }
+        // 进入剪贴板模式时解析（仅首次），并将解析出的应用默认全选
+        if (mode == 1) {
+            val result = clipboardPackages
+                ?: withContext(Dispatchers.Default) { parseClipboardPackages() }
+                    .also { clipboardPackages = it }
+            selected.addAll(result)
         }
     }
     AlertDialog(
