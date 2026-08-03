@@ -24,7 +24,6 @@ class FocusService : Service() {
     private val handler = Handler(Looper.getMainLooper())
 
     private val tickRunnable = object : Runnable {
-        private var lastNotificationUpdate = 0L
         override fun run() {
             val now = System.currentTimeMillis()
             val remaining = FocusData.endTime - now
@@ -33,11 +32,8 @@ class FocusService : Service() {
                 Thread { FocusManager.restoreAndEnd() }.start()
                 return
             }
-            // 每 30 秒刷新一次通知，避免频繁刷新耗电
-            if (now - lastNotificationUpdate >= 30_000L) {
-                updateNotification(remaining)
-                lastNotificationUpdate = now
-            }
+            // 每秒刷新通知：倒计时读秒 + 超级岛胶囊实时更新
+            updateNotification(remaining)
             handler.postDelayed(this, 1000L)
         }
     }
@@ -71,8 +67,9 @@ class FocusService : Service() {
     }
 
     private fun createNotificationChannel() {
+        // 重要度 HIGH：HyperOS 超级岛仅对高重要度通知呈现，且首次只 alert 一次
         val channel = NotificationChannelCompat.Builder(
-            channelID, NotificationManagerCompat.IMPORTANCE_LOW
+            channelID, NotificationManagerCompat.IMPORTANCE_HIGH
         ).setName(getString(R.string.title_focus)).build()
         NotificationManagerCompat.from(this).createNotificationChannel(channel)
     }
