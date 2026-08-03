@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.FocusData
@@ -146,7 +147,7 @@ class FocusFragment : MainFragment(), FocusAdapter.OnItemClickListener, FocusAda
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             // Dialog 窗口不在 Activity 视图树内，需手动传播 LifecycleOwner，否则 Compose 挂载时崩溃
             setViewTreeLifecycleOwner(activity)
-            androidx.savedstate.ViewTreeSavedStateRegistryOwner.set(this, activity)
+            setViewTreeSavedStateRegistryOwner(activity)
             setViewTreeViewModelStoreOwner(activity)
             setContent {
                 AppTheme {
@@ -182,7 +183,7 @@ class FocusFragment : MainFragment(), FocusAdapter.OnItemClickListener, FocusAda
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             // Dialog 窗口不在 Activity 视图树内，需手动传播 LifecycleOwner，否则 Compose 挂载时崩溃
             setViewTreeLifecycleOwner(activity)
-            androidx.savedstate.ViewTreeSavedStateRegistryOwner.set(this, activity)
+            setViewTreeSavedStateRegistryOwner(activity)
             setViewTreeViewModelStoreOwner(activity)
             setContent {
                 AppTheme {
