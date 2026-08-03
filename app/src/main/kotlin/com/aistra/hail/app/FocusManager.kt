@@ -11,6 +11,7 @@ import com.aistra.hail.R
 import com.aistra.hail.services.FocusService
 import com.aistra.hail.utils.HLog
 import com.aistra.hail.utils.HShizuku
+import com.aistra.hail.utils.MiuiIsland
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
@@ -54,6 +55,8 @@ object FocusManager {
         FocusData.saveSnapshot(snapshot)
         FocusData.beginSession(minutes)
         startFocusService()
+        // 检测 HyperOS 超级岛权限并记录日志：无权限时系统只显示普通通知（排查用）
+        HLog.i("Hail", "Focus started, island permission = ${MiuiIsland.hasFocusPermission(app)}")
         null
     }
 

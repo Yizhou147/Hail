@@ -14,9 +14,10 @@ import com.aistra.hail.R
 import com.aistra.hail.app.FocusData
 import com.aistra.hail.app.FocusManager
 import com.aistra.hail.ui.main.MainActivity
+import com.aistra.hail.utils.MiuiIsland
 
 /**
- * 专注模式前台服务：常驻通知显示剩余时间（HyperOS 超级岛会自动呈现），
+ * 专注模式前台服务：常驻通知显示剩余时间并注入 HyperOS 超级岛参数（miui.focus.param），
  * 每秒检查是否到点，到点后按快照恢复并结束。
  */
 class FocusService : Service() {
@@ -54,16 +55,19 @@ class FocusService : Service() {
         val contentIntent = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE
         )
-        return NotificationCompat.Builder(this, channelID)
+        val frontTitle = getString(R.string.focus_notification_title)
+        val durationText = FocusData.formatDuration(remaining)
+        val contentText = getString(R.string.focus_notification_text, durationText)
+        val builder = NotificationCompat.Builder(this, channelID)
             .setSmallIcon(R.drawable.ic_outline_timer)
-            .setContentTitle(getString(R.string.focus_notification_title))
-            .setContentText(
-                getString(R.string.focus_notification_text, FocusData.formatDuration(remaining))
-            )
+            .setContentTitle(frontTitle)
+            .setContentText(contentText)
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .build()
+        // HyperOS 超级岛：在通知 extras 中注入岛通知参数
+        builder.addExtras(MiuiIsland.buildIslandExtras(this, frontTitle, durationText, contentText))
+        return builder.build()
     }
 
     private fun createNotificationChannel() {
