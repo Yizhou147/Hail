@@ -46,10 +46,15 @@ class FocusService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         HLog.i("Hail", "FocusService onStartCommand at ${System.currentTimeMillis()}")
         createNotificationChannel()
-        startForeground(100, buildNotification(FocusData.remainingMillis))
+        val notification = buildNotification(FocusData.remainingMillis)
+        // HyperOS 智能省电会延迟受限应用 FGS（startForeground）的首发通知约 10 秒才发布，
+        // 而普通 notify 发布/更新已存在的通知是即时的。因此先 notify 发布普通通知，再
+        // startForeground 将同 id 通知标记为前台通知，最后再 notify 一次覆盖可能被延迟的
+        // FGS 通知，使通知立刻出现。
+        NotificationManagerCompat.from(this).notify(100, notification)
+        HLog.i("Hail", "FocusService notify first at ${System.currentTimeMillis()}")
+        startForeground(100, notification)
         HLog.i("Hail", "FocusService startForeground done at ${System.currentTimeMillis()}")
-        // HyperOS 智能省电会延迟受限应用 FGS 首发通知约 10 秒（实测每秒 notify 更新即时），
-        // 立即用 notify 补发同 id 通知绕开该延迟，使通知立刻出现。
         updateNotification(FocusData.remainingMillis)
         HLog.i("Hail", "FocusService notify redelivery done at ${System.currentTimeMillis()}")
         handler.post(tickRunnable)
