@@ -15,6 +15,12 @@ class XposedInterface : IXposedHookLoadPackage {
             return
         }
 
+        // SystemUI：解锁 HyperOS 焦点通知白名单，让专注通知显示为超级岛
+        if (loadPackageParam.packageName == "com.android.systemui") {
+            SystemUIFocusHook(loadPackageParam.classLoader).startHook()
+            return
+        }
+
         LaunchAppHook(loadPackageParam.classLoader).startHook()
     }
 
