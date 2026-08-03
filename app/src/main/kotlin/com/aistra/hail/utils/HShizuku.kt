@@ -203,19 +203,23 @@ object HShizuku {
 
     /** 专注模式专用的弹窗信息：定制文案 + 无"取消暂停应用"按钮 */
     private val focusSuspendDialogInfo: Any
-        @RequiresApi(Build.VERSION_CODES.Q) @SuppressLint("PrivateApi") get() = HiddenApiBypass.newInstance(
-            Class.forName("android.content.pm.SuspendDialogInfo\$Builder")
-        ).let {
-            // setDialogMessage 的参数是 CharSequence，HiddenApiBypass.invoke 按参数精确类型匹配，
-            // 直接传 String 会匹配不到方法抛 NoSuchMethodException，需先用 findMethod 显式指定参数类型
-            HiddenApiBypass.invoke(
-                HiddenApiBypass.findMethod(it::class.java, "setDialogMessage", CharSequence::class.java),
-                it,
-                app.getString(R.string.focus_suspended_dialog)
-            )
-            // BUTTON_ACTION_NONE = 0：系统弹窗不显示"取消暂停应用"按钮，仅保留"确定"
-            HiddenApiBypass.invoke(it::class.java, it, "setNeutralButtonAction", 0 /*BUTTON_ACTION_NONE*/)
-            HiddenApiBypass.invoke(it::class.java, it, "build")
+        @RequiresApi(Build.VERSION_CODES.Q) @SuppressLint("PrivateApi") get() {
+            // 将 SuspendDialogInfo 加入隐藏 API 豁免（幂等），使下面的标准反射可用；
+            // 避免 HiddenApiBypass.invoke 按参数精确类型匹配 setDialogMessage 时偶发失败
+            HiddenApiBypass.addHiddenApiExemptions("Landroid/content/pm/SuspendDialogInfo;")
+            return runCatching {
+                val builderClass = Class.forName("android.content.pm.SuspendDialogInfo\$Builder")
+                val builder = builderClass.getConstructor().newInstance()
+                builderClass.getMethod("setDialogMessage", CharSequence::class.java)
+                    .invoke(builder, app.getString(R.string.focus_suspended_dialog))
+                // BUTTON_ACTION_NONE = 0：系统弹窗不显示"取消暂停应用"按钮，仅保留"确定"
+                builderClass.getMethod("setNeutralButtonAction", Int::class.java).invoke(builder, 0)
+                builderClass.getMethod("build").invoke(builder)
+            }.getOrElse {
+                HLog.e(it)
+                // 豁免/反射失败时回退到原版弹窗信息（无取消按钮，系统默认文案），避免闪退
+                suspendDialogInfo
+            }
         }
 
     @RequiresApi(Build.VERSION_CODES.P)
