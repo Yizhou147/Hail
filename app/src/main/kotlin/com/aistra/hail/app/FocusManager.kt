@@ -74,7 +74,12 @@ object FocusManager {
         FocusData.endSession()
         val snapshot = FocusData.snapshot.toMap()
         FocusData.saveSnapshot(emptyMap())
-        // 按快照恢复原状
+        // 开始专注时无条件挂起（setPackagesSuspended）了黑名单应用，
+        // 必须先全部解除挂起，否则非 SUSPEND 工作模式下恢复会被跳过，应用保持挂起无法打开
+        snapshot.keys.forEach { pkg ->
+            runCatching { HShizuku.setAppSuspendedForFocus(pkg, false) }.onFailure { HLog.e(it) }
+        }
+        // 再按快照恢复原冻结状态
         snapshot.forEach { (pkg, frozen) ->
             if (frozen != AppManager.isAppFrozen(pkg)) {
                 runCatching { AppManager.setAppFrozen(pkg, frozen) }.onFailure { HLog.e(it) }
