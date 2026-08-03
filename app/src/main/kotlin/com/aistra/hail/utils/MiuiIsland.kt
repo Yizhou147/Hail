@@ -22,7 +22,7 @@ object MiuiIsland {
     private const val PIC_SMALL = "miui.focus.pic_small"
 
     /**
-     * 构建岛通知扩展参数。
+     * 构建岛通知扩展参数（对齐官方 HyperOS 3 param_v2 结构）。
      *
      * @param frontTitle 前置文案（如"专注模式中"）
      * @param remainingText 倒计时正文（如"25:00"）
@@ -35,9 +35,11 @@ object MiuiIsland {
             "param_v2", JSONObject()
                 .put("protocol", 1)
                 .put("business", "hail_focus")
-                // 首次出现即展示展开态，之后缩为胶囊；更新时不重复展开
+                // 通知更新时是否自动展开为展开态（默认 false，不打扰）
                 .put("enableFloat", false)
+                // 允许后续更新同一条岛通知
                 .put("updatable", true)
+                // 首次出现即展示展开态
                 .put("islandFirstFloat", true)
                 // 状态栏 / 息屏展示文案
                 .put("ticker", contentText)
@@ -47,14 +49,32 @@ object MiuiIsland {
                         .put("islandProperty", 1)
                         .put(
                             "bigIslandArea", JSONObject()
+                                // 大岛 A 区：图文组件（图片 + 文本组件）
                                 .put(
-                                    "textInfo", JSONObject()
-                                        .put("frontTitle", frontTitle)
-                                        .put("title", remainingText)
-                                        .put("content", context.getString(R.string.focus_island_content))
-                                        .put("showHighlightColor", true)
+                                    "imageTextInfoLeft", JSONObject()
+                                        .put("type", 1)
+                                        .put(
+                                            "picInfo", JSONObject()
+                                                .put("type", 1)
+                                                .put("pic", PIC_SMALL)
+                                        )
+                                        // 官方约定文本组件 key 即为 "miui.focus.paramtextInfo"
+                                        .put(
+                                            "miui.focus.paramtextInfo", JSONObject()
+                                                .put("frontTitle", frontTitle)
+                                                .put("title", remainingText)
+                                                .put("content", context.getString(R.string.focus_island_content))
+                                                .put("useHighLight", false)
+                                        )
+                                )
+                                // 大岛 B 区：图片组件
+                                .put(
+                                    "picInfo", JSONObject()
+                                        .put("type", 1)
+                                        .put("pic", PIC_SMALL)
                                 )
                         )
+                        // 小岛：图片组件
                         .put(
                             "smallIslandArea", JSONObject()
                                 .put(
