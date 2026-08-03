@@ -14,15 +14,19 @@ import com.aistra.hail.R
 import com.aistra.hail.app.FocusData
 import com.aistra.hail.app.FocusManager
 import com.aistra.hail.ui.main.MainActivity
+import com.aistra.hail.utils.HLog
 import com.aistra.hail.utils.MiuiIsland
 
 /**
- * 专注模式前台服务：常驻通知显示剩余时间并注入 HyperOS 超级岛参数（miui.focus.param），
+ * 专注模式前台服务：常驻通知显示剩余时间；仅当系统授予 HyperOS 焦点通知
+ * 权限时才注入超级岛参数（miui.focus.param），否则退化为普通通知。
  * 每秒检查是否到点，到点后按快照恢复并结束。
  */
 class FocusService : Service() {
     private val channelID = javaClass.simpleName
     private val handler = Handler(Looper.getMainLooper())
+    // 系统是否放行本应用的焦点通知（服务运行期间一般不变，启动时查询一次）
+    private var islandPermission = false
 
     private val tickRunnable = object : Runnable {
         override fun run() {
@@ -41,6 +45,8 @@ class FocusService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
+        islandPermission = MiuiIsland.hasFocusPermission(this)
+        HLog.i("Hail", "FocusService island permission = $islandPermission")
         startForeground(100, buildNotification(FocusData.remainingMillis))
         handler.post(tickRunnable)
         return START_STICKY
@@ -65,8 +71,13 @@ class FocusService : Service() {
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-        // HyperOS 超级岛：在通知 extras 中注入岛通知参数
-        builder.addExtras(MiuiIsland.buildIslandExtras(this, frontTitle, durationText, contentText))
+        // HyperOS 超级岛：仅当系统授予焦点通知权限时才注入岛参数。
+        // 无权限时反复注入会被系统不断尝试上岛并拒绝，导致通知闪烁，因此退化为普通通知。
+        if (islandPermission) {
+            builder.addExtras(
+                MiuiIsland.buildIslandExtras(this, frontTitle, durationText, contentText)
+            )
+        }
         return builder.build()
     }
 
