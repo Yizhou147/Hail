@@ -1,8 +1,8 @@
 package com.aistra.hail.ui.focus
 
-import android.app.Dialog
 import android.os.Bundle
 import android.view.*
+import android.widget.FrameLayout
 import androidx.appcompat.widget.SearchView
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
@@ -11,10 +11,7 @@ import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.setViewTreeLifecycleOwner
-import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.FocusData
@@ -28,7 +25,9 @@ import com.aistra.hail.utils.FuzzySearch
 import com.aistra.hail.utils.HPackages
 import com.aistra.hail.utils.HUI
 import com.aistra.hail.utils.PinyinSearch
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * 专注页：黑名单应用列表 + 导入 + 开始专注（右下角 FAB）。
@@ -90,14 +89,22 @@ class FocusFragment : MainFragment(), FocusAdapter.OnItemClickListener, FocusAda
     }
 
     private fun updateCurrentList() {
-        val display = FocusData.blacklist.mapNotNull { pkg ->
-            val name = HPackages.getApplicationInfoOrNull(pkg)?.loadLabel(app.packageManager)?.toString() ?: pkg
-            if (query.isEmpty() || FuzzySearch.search(pkg, query) || FuzzySearch.search(name, query)
-                || PinyinSearch.searchPinyinAll(name, query)
-            ) pkg to name else null
-        }.sortedBy { it.second }.map { it.first }
-        binding.empty.isVisible = FocusData.blacklist.isEmpty()
-        focusAdapter.submitList(display)
+        // 黑名单较大时，逐个 getApplicationInfo + loadLabel 是跨进程 binder 调用，
+        // 放后台线程执行，避免阻塞主线程造成卡顿/卡死
+        val query = this.query
+        val packages = FocusData.blacklist.toList()
+        lifecycleScope.launch {
+            val display = withContext(Dispatchers.Default) {
+                packages.mapNotNull { pkg ->
+                    val name = HPackages.getApplicationInfoOrNull(pkg)?.loadLabel(app.packageManager)?.toString() ?: pkg
+                    if (query.isEmpty() || FuzzySearch.search(pkg, query) || FuzzySearch.search(name, query)
+                        || PinyinSearch.searchPinyinAll(name, query)
+                    ) pkg to name else null
+                }.sortedBy { it.second }.map { it.first }
+            }
+            binding.empty.isVisible = packages.isEmpty()
+            focusAdapter.submitList(display)
+        }
     }
 
     private fun updateBarTitle() {
@@ -140,28 +147,58 @@ class FocusFragment : MainFragment(), FocusAdapter.OnItemClickListener, FocusAda
         updateBarTitle()
     }
 
+    /**
+     * 当前叠加的弹窗 ComposeView。弹窗采用"addView 覆盖层 + Compose 单窗口"方案：
+     * 相比"Android Dialog + Compose AlertDialog"的双层窗口，可避免双窗口渲染冻结、
+     * 图形 buffer 堆积导致的内存暴涨与系统卡死；
+     * 配合 DisposeOnDetachedFromWindow，关闭后立即销毁 Composition，杜绝泄漏。
+     */
+    private var dialogOverlay: ComposeView? = null
+
     private fun showFocusTimeDialog() {
-        val dialog = Dialog(requireContext())
-        val activity = requireActivity()
-        dialog.setContentView(ComposeView(requireContext()).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            // Dialog 窗口不在 Activity 视图树内，需手动传播 LifecycleOwner，否则 Compose 挂载时崩溃
-            setViewTreeLifecycleOwner(activity)
-            setViewTreeSavedStateRegistryOwner(activity)
-            setViewTreeViewModelStoreOwner(activity)
+        val overlay = ComposeView(requireContext()).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
             setContent {
                 AppTheme {
                     FocusTimeDialog(
-                        onDismiss = { dialog.dismiss() },
+                        onDismiss = { dismissOverlay() },
                         onStart = { minutes ->
-                            dialog.dismiss()
+                            dismissOverlay()
                             startFocus(minutes)
                         }
                     )
                 }
             }
-        })
-        dialog.show()
+        }
+        dialogOverlay = overlay
+        (requireView() as ViewGroup).addView(
+            overlay, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        )
+    }
+
+    private fun showImportDialog() {
+        val overlay = ComposeView(requireContext()).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+            setContent {
+                AppTheme {
+                    ImportAppsDialog(
+                        onDismiss = {
+                            dismissOverlay()
+                            updateCurrentList()
+                        }
+                    )
+                }
+            }
+        }
+        dialogOverlay = overlay
+        (requireView() as ViewGroup).addView(
+            overlay, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        )
+    }
+
+    private fun dismissOverlay() {
+        dialogOverlay?.let { (requireView() as ViewGroup).removeView(it) }
+        dialogOverlay = null
     }
 
     private fun startFocus(minutes: Int) {
@@ -174,29 +211,6 @@ class FocusFragment : MainFragment(), FocusAdapter.OnItemClickListener, FocusAda
                 HUI.showToast(error, true)
             }
         }
-    }
-
-    private fun showImportDialog() {
-        val dialog = Dialog(requireContext())
-        val activity = requireActivity()
-        dialog.setContentView(ComposeView(requireContext()).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            // Dialog 窗口不在 Activity 视图树内，需手动传播 LifecycleOwner，否则 Compose 挂载时崩溃
-            setViewTreeLifecycleOwner(activity)
-            setViewTreeSavedStateRegistryOwner(activity)
-            setViewTreeViewModelStoreOwner(activity)
-            setContent {
-                AppTheme {
-                    ImportAppsDialog(
-                        onDismiss = {
-                            dialog.dismiss()
-                            updateCurrentList()
-                        }
-                    )
-                }
-            }
-        })
-        dialog.show()
     }
 
     override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
@@ -243,6 +257,9 @@ class FocusFragment : MainFragment(), FocusAdapter.OnItemClickListener, FocusAda
     }
 
     override fun onDestroyView() {
+        // 移除残留的弹窗覆盖层，触发 DisposeOnDetachedFromWindow 销毁 Composition
+        (view as? ViewGroup)?.let { root -> dialogOverlay?.let { root.removeView(it) } }
+        dialogOverlay = null
         focusAdapter.onDestroy()
         super.onDestroyView()
         _binding = null
