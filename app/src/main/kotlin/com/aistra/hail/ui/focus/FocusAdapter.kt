@@ -19,19 +19,20 @@ import kotlinx.coroutines.Job
 
 class FocusAdapter(
     private val selectedList: MutableList<String>
-) : ListAdapter<String, FocusAdapter.ViewHolder>(DIFF) {
+) : ListAdapter<String, FocusAdapter.ViewHolder>(
+    // 必须是实例级（而非 companion object 静态），才能感知 selectedList 的选中状态变化，
+    // 否则多选时勾选/取消不会触发 item 刷新，用户看不到选中反馈
+    object : DiffUtil.ItemCallback<String>() {
+        override fun areItemsTheSame(oldItem: String, newItem: String): Boolean = oldItem == newItem
+        override fun areContentsTheSame(oldItem: String, newItem: String): Boolean =
+            oldItem in FocusData.blacklist == newItem in FocusData.blacklist
+                && oldItem in selectedList == newItem in selectedList
+    }
+) {
     private var loadIconJob: Job? = null
     lateinit var onItemClickListener: OnItemClickListener
     lateinit var onItemLongClickListener: OnItemLongClickListener
     var multiselect: Boolean = false
-
-    companion object {
-        private val DIFF = object : DiffUtil.ItemCallback<String>() {
-            override fun areItemsTheSame(oldItem: String, newItem: String): Boolean = oldItem == newItem
-            override fun areContentsTheSame(oldItem: String, newItem: String): Boolean =
-                oldItem in FocusData.blacklist && newItem in FocusData.blacklist
-        }
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(
         LayoutInflater.from(parent.context).inflate(R.layout.item_focus, parent, false)
