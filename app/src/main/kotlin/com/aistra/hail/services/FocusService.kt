@@ -48,6 +48,10 @@ class FocusService : Service() {
         createNotificationChannel()
         startForeground(100, buildNotification(FocusData.remainingMillis))
         HLog.i("Hail", "FocusService startForeground done at ${System.currentTimeMillis()}")
+        // HyperOS 智能省电会延迟受限应用 FGS 首发通知约 10 秒（实测每秒 notify 更新即时），
+        // 立即用 notify 补发同 id 通知绕开该延迟，使通知立刻出现。
+        updateNotification(FocusData.remainingMillis)
+        HLog.i("Hail", "FocusService notify redelivery done at ${System.currentTimeMillis()}")
         handler.post(tickRunnable)
         return START_STICKY
     }
