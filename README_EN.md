@@ -134,6 +134,33 @@ prebuilt_etc {
 }
 ```
 
+## Focus Mode
+
+Focus Mode blocks apps in the blacklist for a set period of time to keep you away from distractions.
+
+### Usage
+
+1. Check the apps to block on the Focus page:
+   - **Search** by app name or package name.
+   - **Multi-select** apps in batch.
+   - **Import**: tap the import button at the top right. You can pick apps manually from Hail's installed app list, or **import from clipboard** — compatible with the original package-name list format, e.g. `["io.wallpaperengine.weclient","com.ss.android.ugc.aweme","com.larus.nova","com.example.ourom"]`, a single package name also works; only apps that are installed and not already in the blacklist will be imported.
+2. Choose a countdown duration (1–240 minutes, direct numeric input or presets, up to 20 presets saved) and start.
+3. Once started, apps in the blacklist are suspended by the system (a "Focus mode" prompt is shown) and cannot be launched.
+4. Hail enters a fullscreen countdown lock: it covers all Hail pages and intercepts the back key and touch input, so a session cannot be ended early.
+5. A persistent notification keeps showing the remaining time, available either as a normal notification or as a HyperOS island.
+6. When the countdown ends, Hail automatically unsuspends the apps and restores each app's original frozen state from the snapshot taken before starting.
+
+### Notes
+
+- [Shizuku](https://github.com/RikkaApps/Shizuku) authorization is required.
+- If the device reboots during a session, Hail automatically restores the countdown and lock state after boot.
+
+### HyperOS island
+
+- Focus notifications are shown as a HyperOS island by default; this can be disabled in Settings to show a plain notification instead.
+- Showing the island requires the system to allow focus notifications; if the island does not appear, use HyperCeiler to remove Hail from the focus notification whitelist.
+- On some devices with the "smart battery" policy, Hail's first notification may be delayed by about 10 seconds; setting Hail's battery policy to "Unrestricted" makes it appear immediately (Hail has no background activity, so this does not cost extra battery).
+
 ## Revert
 
 ### By adb
