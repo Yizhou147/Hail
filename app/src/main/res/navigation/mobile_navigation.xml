@@ -16,6 +16,11 @@
         android:label="@string/title_apps" />
 
     <fragment
+        android:id="@+id/nav_focus"
+        android:name="com.aistra.hail.ui.focus.FocusFragment"
+        android:label="@string/title_focus" />
+
+    <fragment
         android:id="@+id/nav_settings"
         android:name="com.aistra.hail.ui.settings.SettingsFragment"
         android:label="@string/title_settings" />

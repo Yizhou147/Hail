@@ -27,6 +27,8 @@ object AppManager {
     }
 
     fun setListFrozen(frozen: Boolean, vararg appInfo: AppInfo): String? {
+        // 专注模式进行中，屏蔽所有冻结/解冻操作（恢复由 FocusManager 在会话结束后执行）
+        if (FocusData.isActive) return null
         val excludeMe = appInfo.filter { it.packageName != BuildConfig.APPLICATION_ID }
         var i = 0
         var denied = false
@@ -51,7 +53,7 @@ object AppManager {
     }
 
     fun setAppFrozen(packageName: String, frozen: Boolean): Boolean =
-        packageName != BuildConfig.APPLICATION_ID && when (HailData.workingMode) {
+        packageName != BuildConfig.APPLICATION_ID && !FocusData.isActive && when (HailData.workingMode) {
             HailData.MODE_OWNER_HIDE -> HPolicy.setAppHidden(packageName, frozen)
             HailData.MODE_OWNER_SUSPEND -> HPolicy.setAppSuspended(packageName, frozen)
             HailData.MODE_DHIZUKU_HIDE -> HDhizuku.setAppHidden(packageName, frozen)

@@ -28,6 +28,7 @@ import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.AppManager
+import com.aistra.hail.app.FocusData
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
 import com.aistra.hail.ui.theme.AppTheme
@@ -46,6 +47,11 @@ class ApiActivity : ComponentActivity() {
     }
 
     private fun handleAction(action: String?): Boolean {
+        // 专注模式进行中，屏蔽雹的所有外部动作（启动/冻结/解冻/锁屏等）
+        if (FocusData.isActive) {
+            HUI.showToast(R.string.focus_unavailable)
+            return true
+        }
         when (action) {
             Intent.ACTION_SHOW_APP_INFO -> {
                 setContent { AppTheme { RedirectBottomSheet(requirePackage) } }

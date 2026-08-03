@@ -10,8 +10,11 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import com.aistra.hail.app.AppManager
+import com.aistra.hail.app.FocusData
+import com.aistra.hail.app.FocusManager
 import com.aistra.hail.app.HailData
 import com.aistra.hail.services.AutoFreezeService
+import com.aistra.hail.services.FocusService
 import com.aistra.hail.utils.HDhizuku
 import com.aistra.hail.utils.HTarget
 
@@ -22,6 +25,16 @@ class HailApp : Application() {
         // DirtyDataUpdater.update(app)
         if (!HTarget.S) setAppTheme(HailData.appTheme)
         if (HailData.workingMode.startsWith(HailData.DHIZUKU)) HDhizuku.init()
+        // 专注模式兜底：进程被杀/重启后恢复倒计时或补执行恢复
+        if (FocusData.isActive) {
+            if (FocusData.endTime > System.currentTimeMillis()) {
+                runCatching {
+                    ContextCompat.startForegroundService(this, Intent(this, FocusService::class.java))
+                }
+            } else {
+                Thread { FocusManager.restoreAndEnd() }.start()
+            }
+        }
     }
 
     fun setAutoFreezeService(autoFreezeAfterLock: Boolean = HailData.autoFreezeAfterLock, context: Context = app) {

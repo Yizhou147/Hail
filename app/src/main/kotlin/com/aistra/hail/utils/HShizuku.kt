@@ -12,6 +12,8 @@ import android.view.InputEvent
 import android.view.KeyEvent
 import androidx.annotation.RequiresApi
 import com.aistra.hail.BuildConfig
+import com.aistra.hail.HailApp.Companion.app
+import com.aistra.hail.R
 import moe.shizuku.server.IShizukuService
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.Shizuku
@@ -103,7 +105,14 @@ object HShizuku {
         }
     }
 
-    fun setAppSuspended(packageName: String, suspended: Boolean): Boolean {
+    fun setAppSuspended(packageName: String, suspended: Boolean): Boolean =
+        setAppSuspended(packageName, suspended, suspendDialogInfo)
+
+    /** 专注模式专用的暂停：系统弹窗文案为"专注模式中"，且不显示"取消暂停应用"按钮 */
+    fun setAppSuspendedForFocus(packageName: String, suspended: Boolean): Boolean =
+        setAppSuspended(packageName, suspended, focusSuspendDialogInfo)
+
+    private fun setAppSuspended(packageName: String, suspended: Boolean, dialogInfo: Any?): Boolean {
         HPackages.getApplicationInfoOrNull(packageName) ?: return false
         if (HTarget.P) setAppRestricted(packageName, suspended)
         if (suspended) forceStopApp(packageName)
@@ -119,19 +128,19 @@ object HShizuku {
                         suspended,
                         null,
                         null,
-                        if (suspended) suspendDialogInfo else null,
+                        if (suspended) dialogInfo else null,
                         0,
                         callerPackage,
                         HPackages.myUserId /*suspendingUserId*/,
                         HPackages.myUserId /*targetUserId*/
                     )
                 }.getOrElse {
-                    if (it is NoSuchMethodException) setPackagesSuspendedAsUserSinceQ(pm, packageName, suspended)
+                    if (it is NoSuchMethodException) setPackagesSuspendedAsUserSinceQ(pm, packageName, suspended, dialogInfo)
                     else throw it
                 }
 
                 HTarget.Q -> runCatching {
-                    setPackagesSuspendedAsUserSinceQ(pm, packageName, suspended)
+                    setPackagesSuspendedAsUserSinceQ(pm, packageName, suspended, dialogInfo)
                 }.getOrElse {
                     if (it is NoSuchMethodException) setPackagesSuspendedAsUserSinceP(pm, packageName, suspended)
                     else throw it
@@ -152,7 +161,9 @@ object HShizuku {
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    private fun setPackagesSuspendedAsUserSinceQ(pm: Any, packageName: String, suspended: Boolean): Any =
+    private fun setPackagesSuspendedAsUserSinceQ(
+        pm: Any, packageName: String, suspended: Boolean, dialogInfo: Any?
+    ): Any =
         HiddenApiBypass.invoke(
             pm::class.java,
             pm,
@@ -161,7 +172,7 @@ object HShizuku {
             suspended,
             null,
             null,
-            if (suspended) suspendDialogInfo else null,
+            if (suspended) dialogInfo else null,
             callerPackage,
             HPackages.myUserId
         )
@@ -185,6 +196,19 @@ object HShizuku {
         @RequiresApi(Build.VERSION_CODES.Q) @SuppressLint("PrivateApi") get() = HiddenApiBypass.newInstance(
             Class.forName("android.content.pm.SuspendDialogInfo\$Builder")
         ).let {
+            // BUTTON_ACTION_NONE = 0：系统弹窗不显示"取消暂停应用"按钮，仅保留"确定"
+            HiddenApiBypass.invoke(it::class.java, it, "setNeutralButtonAction", 0 /*BUTTON_ACTION_NONE*/)
+            HiddenApiBypass.invoke(it::class.java, it, "build")
+        }
+
+    /** 专注模式专用的弹窗信息：定制文案 + 无"取消暂停应用"按钮 */
+    private val focusSuspendDialogInfo: Any
+        @RequiresApi(Build.VERSION_CODES.Q) @SuppressLint("PrivateApi") get() = HiddenApiBypass.newInstance(
+            Class.forName("android.content.pm.SuspendDialogInfo\$Builder")
+        ).let {
+            HiddenApiBypass.invoke(
+                it::class.java, it, "setDialogMessage", app.getString(R.string.focus_suspended_dialog)
+            )
             // BUTTON_ACTION_NONE = 0：系统弹窗不显示"取消暂停应用"按钮，仅保留"确定"
             HiddenApiBypass.invoke(it::class.java, it, "setNeutralButtonAction", 0 /*BUTTON_ACTION_NONE*/)
             HiddenApiBypass.invoke(it::class.java, it, "build")

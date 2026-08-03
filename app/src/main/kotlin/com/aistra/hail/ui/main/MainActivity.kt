@@ -2,11 +2,16 @@ package com.aistra.hail.ui.main
 
 import android.os.Bundle
 import android.view.Menu
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.ContextCompat
 import androidx.core.view.MenuCompat
 import androidx.core.view.WindowCompat
@@ -18,9 +23,12 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.aistra.hail.R
+import com.aistra.hail.app.FocusData
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.ActivityMainBinding
 import com.aistra.hail.extensions.*
+import com.aistra.hail.ui.focus.FocusLockScreen
+import com.aistra.hail.ui.theme.AppTheme
 import com.aistra.hail.utils.HPolicy
 import com.aistra.hail.utils.HUI
 import com.google.android.material.appbar.AppBarLayout
@@ -30,11 +38,21 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedListener {
     lateinit var fab: ExtendedFloatingActionButton
     lateinit var appbar: AppBarLayout
+    private lateinit var binding: ActivityMainBinding
+    private var focusLockView: ComposeView? = null
+
+    // 专注模式中拦截返回键
+    private val backCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {}
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val binding = initView()
+        this.binding = binding
+        onBackPressedDispatcher.addCallback(this, backCallback)
+        updateFocusLock()
         if (!HailData.biometricLogin || BiometricManager.from(this)
                 .canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL) != BiometricManager.BIOMETRIC_SUCCESS
         ) return
@@ -70,7 +88,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         val navController = navHostFragment.navController
         navController.addOnDestinationChangedListener(this@MainActivity)
         val appBarConfiguration = AppBarConfiguration.Builder(
-            R.id.nav_home, R.id.nav_apps, R.id.nav_settings, R.id.nav_about
+            R.id.nav_home, R.id.nav_apps, R.id.nav_focus, R.id.nav_settings, R.id.nav_about
         ).build()
         setupActionBarWithNavController(navController, appBarConfiguration)
         bottomNav?.setupWithNavController(navController)
@@ -104,10 +122,54 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         if (HailData.biometricLogin) finishAndRemoveTask()
     } */
 
+    override fun onResume() {
+        super.onResume()
+        updateFocusLock()
+    }
+
+    /**
+     * 根据专注状态显示/隐藏全屏倒计时锁定，并控制返回键拦截。
+     * 专注进行中：全屏倒计时覆盖一切，隐藏导航/FAB；结束则恢复。
+     */
+    fun updateFocusLock() {
+        if (FocusData.isActive) {
+            showFocusLock()
+            backCallback.isEnabled = true
+        } else {
+            hideFocusLock()
+            backCallback.isEnabled = false
+        }
+    }
+
+    private fun showFocusLock() {
+        if (focusLockView != null) return
+        val view = ComposeView(this).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                AppTheme { FocusLockScreen(onFinished = { updateFocusLock() }) }
+            }
+        }
+        (binding.root as ViewGroup).addView(
+            view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        )
+        focusLockView = view
+        appbar.isVisible = false
+        bottomNav?.isVisible = false
+        fab.hide()
+    }
+
+    private fun hideFocusLock() {
+        focusLockView?.let { (binding.root as ViewGroup).removeView(it) }
+        focusLockView = null
+        appbar.isVisible = true
+        bottomNav?.isVisible = true
+        if (fab.tag == true) fab.show() else fab.hide()
+    }
+
     override fun onDestinationChanged(
         controller: NavController, destination: NavDestination, arguments: Bundle?
     ) {
-        fab.tag = destination.id == R.id.nav_home
+        fab.tag = destination.id == R.id.nav_home || destination.id == R.id.nav_focus
         if (fab.tag == true) fab.show() else fab.hide()
     }
 }

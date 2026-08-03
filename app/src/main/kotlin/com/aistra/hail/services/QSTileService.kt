@@ -10,6 +10,7 @@ import android.service.quicksettings.TileService
 import androidx.annotation.RequiresApi
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
+import com.aistra.hail.app.FocusData
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.HTarget
@@ -23,6 +24,11 @@ class QSTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
+        // 专注模式进行中，屏蔽磁贴操作
+        if (FocusData.isActive) {
+            updateTile()
+            return
+        }
         if (HailData.tileAction == HailData.AUTO_FREEZE_AFTER_LOCK) {
             HailData.autoFreezeAfterLock = !HailData.autoFreezeAfterLock
             app.setAutoFreezeService(context = this)
