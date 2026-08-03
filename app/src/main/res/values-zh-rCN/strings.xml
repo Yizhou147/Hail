@@ -186,6 +186,8 @@
     <string name="focus_preset_saved">已保存预设</string>
     <string name="focus_started">专注模式已开始</string>
     <string name="focus_import_apps">导入应用</string>
+    <string name="focus_import_select">选择应用</string>
+    <string name="focus_import_clipboard_empty">剪贴板中没有可导入的应用</string>
     <string name="focus_add">添加</string>
     <string name="focus_empty_presets">暂无预设</string>
     <string name="focus_add_to_blacklist">加入专注黑名单</string>

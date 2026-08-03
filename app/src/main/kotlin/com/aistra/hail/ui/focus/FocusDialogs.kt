@@ -28,6 +28,7 @@ import com.aistra.hail.utils.HPackages
 import com.aistra.hail.utils.HUI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 
 /** 开始专注的时间设置对话框：数字输入 + 预设快捷选择 + 保存/管理预设 */
 @Composable
@@ -208,11 +209,18 @@ private fun PresetManageDialog(onDismiss: () -> Unit) {
     )
 }
 
-/** 从雹现有应用列表导入黑名单 */
+/**
+ * 导入黑名单对话框：支持从雹现有应用列表手动选择，或从剪贴板导入
+ * （兼容原版 JSON 数组格式 ["pkg1","pkg2",...]，也支持单个包名）。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImportAppsDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
     val pm = context.packageManager
+    // 0=手动选择应用，1=从剪贴板导入
+    var mode by remember { mutableStateOf(0) }
+    val selected = remember { mutableStateListOf<String>() }
     // 后台线程加载应用列表，避免主线程枚举 + loadLabel 造成卡顿
     val apps by produceState<List<ApplicationInfo>?>(initialValue = null) {
         value = withContext(Dispatchers.Default) {
@@ -223,46 +231,105 @@ fun ImportAppsDialog(onDismiss: () -> Unit) {
             }.getOrNull()
         }
     }
-    val selected = remember { mutableStateListOf<String>() }
+    // 剪贴板解析结果（null=尚未解析/解析中）
+    var clipboardPackages by remember { mutableStateOf<List<String>?>(null) }
+    LaunchedEffect(mode) {
+        if (mode == 1 && clipboardPackages == null) {
+            clipboardPackages = withContext(Dispatchers.Default) { parseClipboardPackages() }
+        }
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.focus_import_apps)) },
         text = {
-            val list = apps
-            when {
-                list == null -> Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                    contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator() }
+            Column {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = mode == 0,
+                        onClick = { selected.clear(); mode = 0 },
+                        label = { Text(text = stringResource(R.string.focus_import_select)) }
+                    )
+                    FilterChip(
+                        selected = mode == 1,
+                        onClick = { selected.clear(); mode = 1 },
+                        label = { Text(text = stringResource(R.string.action_import_clipboard)) }
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                if (mode == 0) {
+                    val list = apps
+                    when {
+                        list == null -> Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) { CircularProgressIndicator() }
 
-                list.isEmpty() -> Text(
-                    text = stringResource(R.string.nothing_here),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                        list.isEmpty() -> Text(
+                            text = stringResource(R.string.nothing_here),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
-                else -> LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
-                    items(list, key = { it.packageName }) { info ->
-                        val pkg = info.packageName
-                        val name = info.loadLabel(pm).toString()
-                        val icon = rememberAppIcon(context, info)
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                if (pkg in selected) selected.remove(pkg) else selected.add(pkg)
-                            }.padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = pkg in selected,
-                                onCheckedChange = { checked ->
-                                    if (checked) selected.add(pkg) else selected.remove(pkg)
+                        else -> LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                            items(list, key = { it.packageName }) { info ->
+                                val pkg = info.packageName
+                                val name = info.loadLabel(pm).toString()
+                                val icon = rememberAppIcon(context, info)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().clickable {
+                                        if (pkg in selected) selected.remove(pkg) else selected.add(pkg)
+                                    }.padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = pkg in selected,
+                                        onCheckedChange = { checked ->
+                                            if (checked) selected.add(pkg) else selected.remove(pkg)
+                                        }
+                                    )
+                                    if (icon != null) {
+                                        Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(36.dp))
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(text = name, modifier = Modifier.weight(1f))
                                 }
-                            )
-                            if (icon != null) {
-                                Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(36.dp))
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(text = name, modifier = Modifier.weight(1f))
+                        }
+                    }
+                } else {
+                    val list = clipboardPackages
+                    when {
+                        list == null -> Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) { CircularProgressIndicator() }
+
+                        list.isEmpty() -> Text(
+                            text = stringResource(R.string.focus_import_clipboard_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        else -> LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                            items(list, key = { it }) { pkg ->
+                                val name = HPackages.getApplicationInfoOrNull(pkg)
+                                    ?.loadLabel(pm)?.toString() ?: pkg
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().clickable {
+                                        if (pkg in selected) selected.remove(pkg) else selected.add(pkg)
+                                    }.padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = pkg in selected,
+                                        onCheckedChange = { checked ->
+                                            if (checked) selected.add(pkg) else selected.remove(pkg)
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(text = name, modifier = Modifier.weight(1f))
+                                }
+                            }
                         }
                     }
                 }
@@ -278,6 +345,27 @@ fun ImportAppsDialog(onDismiss: () -> Unit) {
             TextButton(onClick = onDismiss) { Text(text = stringResource(android.R.string.cancel)) }
         }
     )
+}
+
+/**
+ * 解析剪贴板中的包名列表：兼容原版 JSON 数组格式 ["pkg1","pkg2",...]，
+ * 剪贴板内容前后可有额外文本（截取 [ 到 ]）；无数组时按单个包名处理。
+ * 仅返回已安装且不在黑名单中的包名。
+ */
+private fun parseClipboardPackages(): List<String> {
+    val str = HUI.pasteText() ?: return emptyList()
+    return runCatching {
+        val json = if (str.contains('[')) JSONArray(
+            str.substring(str.indexOf('[')..str.indexOf(']', str.indexOf('[')))
+        )
+        else JSONArray().put(str.trim())
+        buildList {
+            for (i in 0 until json.length()) {
+                val pkg = json.getString(i)
+                if (HPackages.getApplicationInfoOrNull(pkg) != null && !FocusData.isInBlacklist(pkg)) add(pkg)
+            }
+        }
+    }.getOrDefault(emptyList())
 }
 
 /** 异步加载应用图标（后台解码，走 AppIconCache 缓存） */

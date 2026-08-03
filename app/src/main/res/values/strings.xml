@@ -185,6 +185,8 @@
     <string name="focus_preset_saved">Preset saved</string>
     <string name="focus_started">Focus mode started</string>
     <string name="focus_import_apps">Import apps</string>
+    <string name="focus_import_select">Select apps</string>
+    <string name="focus_import_clipboard_empty">No importable apps in the clipboard</string>
     <string name="focus_add">Add</string>
     <string name="focus_empty_presets">No presets yet</string>
     <string name="focus_add_to_blacklist">Add to Focus blacklist</string>
