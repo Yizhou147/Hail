@@ -33,14 +33,11 @@ jobs:
             echo keyAlias=${{ secrets.KEYSTORE_ALIAS }} >> signing.properties
             echo keyPassword=${{ secrets.KEYSTORE_ALIAS_PASSWORD }} >> signing.properties
             echo ${{ secrets.KEYSTORE }} | base64 --decode > keystore.jks
-            ./gradlew assembleRelease
-            echo "filename=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/release/output-metadata.json)" >> $GITHUB_OUTPUT
-            echo "variant=release" >> $GITHUB_OUTPUT
-          else
-            ./gradlew assembleDebug
-            echo "filename=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/debug/output-metadata.json)" >> $GITHUB_OUTPUT
-            echo "variant=debug" >> $GITHUB_OUTPUT
           fi
+          # 无签名 secrets 时 build.gradle.kts 自动回退 debug 签名，minify 照常开启
+          ./gradlew assembleRelease
+          echo "filename=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/release/output-metadata.json)" >> $GITHUB_OUTPUT
+          echo "variant=release" >> $GITHUB_OUTPUT
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v7.0.1
         with:
