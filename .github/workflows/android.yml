@@ -25,6 +25,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
       - name: Build with Gradle
+        id: build
         run: |
           if [ -n "${{ secrets.KEYSTORE }}" ]; then
             echo storeFile=../keystore.jks > signing.properties
@@ -33,14 +34,16 @@ jobs:
             echo keyPassword=${{ secrets.KEYSTORE_ALIAS_PASSWORD }} >> signing.properties
             echo ${{ secrets.KEYSTORE }} | base64 --decode > keystore.jks
             ./gradlew assembleRelease
-            echo "filename=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/release/output-metadata.json)" >> $GITHUB_ENV
+            echo "filename=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/release/output-metadata.json)" >> $GITHUB_OUTPUT
+            echo "variant=release" >> $GITHUB_OUTPUT
           else
             ./gradlew assembleDebug
-            echo "filename=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/debug/output-metadata.json)" >> $GITHUB_ENV
+            echo "filename=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/debug/output-metadata.json)" >> $GITHUB_OUTPUT
+            echo "variant=debug" >> $GITHUB_OUTPUT
           fi
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: ${{ env.filename }}
-          path: app/build/outputs/apk/${{ contains(env.filename, 'debug') && 'debug' || 'release' }}/${{ env.filename }}
+          name: ${{ steps.build.outputs.filename }}
+          path: app/build/outputs/apk/${{ steps.build.outputs.variant }}/${{ steps.build.outputs.filename }}
           archive: false
