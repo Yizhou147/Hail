@@ -1,6 +1,7 @@
 package com.aistra.hail.xposed
 
 import android.content.Context
+import android.util.Log
 import com.aistra.hail.xposed.XposedInterface.BaseHook
 import de.robv.android.xposed.XC_MethodReplacement
 import de.robv.android.xposed.XposedHelpers
@@ -21,8 +22,13 @@ import de.robv.android.xposed.XposedHelpers
  */
 class SystemUIFocusHook(classLoader: ClassLoader) : BaseHook(classLoader) {
     override fun startHook() {
+        Log.i(TAG, "startHook: attempting to load $TARGET_CLASS")
         val clazz = runCatching { classLoader.loadClass(TARGET_CLASS) }.getOrNull()
-            ?: return
+        if (clazz == null) {
+            Log.w(TAG, "target class not found: $TARGET_CLASS")
+            return
+        }
+        Log.i(TAG, "target class found: $TARGET_CLASS")
         hookReturnTrue(clazz, "canShowFocus", Context::class.java, String::class.java)
         hookReturnTrue(clazz, "canCustomFocus", String::class.java)
     }
@@ -35,10 +41,12 @@ class SystemUIFocusHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     override fun replaceHookedMethod(param: MethodHookParam): Any = true
                 }
             )
-        }
+            Log.i(TAG, "hooked $methodName")
+        }.onFailure { Log.e(TAG, "hook $methodName failed: ${it.message}") }
     }
 
     private companion object {
+        const val TAG = "HailXposed"
         const val TARGET_CLASS = "miui.systemui.notification.NotificationSettingsManager"
     }
 }
