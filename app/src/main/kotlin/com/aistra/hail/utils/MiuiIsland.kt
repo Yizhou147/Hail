@@ -49,7 +49,7 @@ object MiuiIsland {
                         .put("islandProperty", 1)
                         .put(
                             "bigIslandArea", JSONObject()
-                                // 大岛 A 区（左侧）：秒表图标 + 倒计时
+                                // 大岛 A 区（左侧）：仅秒表图标
                                 .put(
                                     "imageTextInfoLeft", JSONObject()
                                         .put("type", 1)
@@ -58,26 +58,16 @@ object MiuiIsland {
                                                 .put("type", 1)
                                                 .put("pic", PIC_SECOND)
                                         )
-                                        .apply {
-                                            // 官方文档文本组件 key 为 "miui.focus.paramtextInfo"（疑似笔误），
-                                            // 实际系统版本可能识别无前缀 key，多 key 兜底确保文本渲染。
-                                            val text = JSONObject()
-                                                .put("frontTitle", frontTitle)
-                                                .put("title", remainingText)
-                                                .put("content", context.getString(R.string.focus_island_content))
-                                                .put("useHighLight", false)
-                                            put("miui.focus.paramtextInfo", text)
-                                            put("paramtextInfo", text)
-                                            put("textInfo", text)
-                                        }
                                 )
-                                // 大岛 B 区（右侧）：倒计时文本
+                                // 大岛 B 区（右侧）：仅倒计时文本
                                 .apply {
                                     val right = JSONObject()
-                                        .put("frontTitle", frontTitle)
+                                        .put("frontTitle", "")
                                         .put("title", remainingText)
                                         .put("content", "")
                                         .put("useHighLight", false)
+                                    // 官方文档文本组件 key 为 "miui.focus.paramtextInfo"（疑似笔误），
+                                    // 实际系统版本可能识别无前缀 key，多 key 兜底确保文本渲染。
                                     put("miui.focus.paramtextInfo", right)
                                     put("paramtextInfo", right)
                                     put("textInfo", right)

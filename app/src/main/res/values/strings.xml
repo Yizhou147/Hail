@@ -171,7 +171,6 @@
     <string name="focus_apps_paused">%1$d apps paused</string>
     <string name="focus_notification_title">Focus mode</string>
     <string name="focus_notification_text">%s remaining</string>
-    <string name="focus_island_content">until focus ends</string>
     <string name="focus_finished_title">Focus ended</string>
     <string name="focus_finished_text">Suspended apps have been restored</string>
     <string name="focus_suspended_dialog">This app is in focus mode, managed by Hail</string>
