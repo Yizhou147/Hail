@@ -175,6 +175,9 @@
     <string name="focus_finished_text">Suspended apps have been restored</string>
     <string name="focus_suspended_dialog">This app is in focus mode, managed by Hail</string>
     <string name="focus_unavailable">Unavailable during focus mode</string>
+    <string name="focus_island">Focus island (HyperOS)</string>
+    <string name="focus_island_summary_on">Shown as HyperOS island; requires removing the focus notification whitelist via HyperCeiler</string>
+    <string name="focus_island_summary_off">Shown as a plain notification</string>
     <string name="focus_preset_name">Preset name</string>
     <string name="focus_preset_name_hint">e.g. Lunch break</string>
     <string name="focus_preset_name_required">Enter a preset name</string>

@@ -176,6 +176,9 @@
     <string name="focus_finished_text">已恢复暂停的应用</string>
     <string name="focus_suspended_dialog">该应用正在专注模式中，由雹所管理</string>
     <string name="focus_unavailable">专注模式中，无法执行此操作</string>
+    <string name="focus_island">专注超级岛（HyperOS）</string>
+    <string name="focus_island_summary_on">以超级岛形态展示；需用 HyperCeiler 去除焦点通知白名单限制</string>
+    <string name="focus_island_summary_off">仅显示普通通知</string>
     <string name="focus_preset_name">预设名称</string>
     <string name="focus_preset_name_hint">例如：午休</string>
     <string name="focus_preset_name_required">请输入预设名称</string>

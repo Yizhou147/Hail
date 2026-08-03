@@ -166,6 +166,16 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 titleId = R.string.nine_key,
                 icon = Icons.Outlined.Dialpad
             )
+            switchPreference(
+                key = HailData.FOCUS_ISLAND,
+                defaultValue = true,
+                titleId = R.string.focus_island,
+                icon = Icons.Outlined.Timer
+            ) { island ->
+                Text(text = stringResource(
+                    if (island) R.string.focus_island_summary_on else R.string.focus_island_summary_off
+                ))
+            }
             listPreference(
                 key = HailData.TILE_ACTION,
                 defaultValue = HailData.tileAction,
@@ -270,6 +280,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
         @StringRes titleId: Int,
         enabled: Boolean = true,
         icon: ImageVector,
+        summary: @Composable (Boolean) -> Unit = {},
     ) = item(key = titleId, contentType = "SwitchPreference") {
         val state = rememberState()
         SwitchPreference(
@@ -277,7 +288,8 @@ class SettingsFragment : MainFragment(), MenuProvider {
             onValueChange = { if (onValueChange(state, it)) state.value = it },
             title = { Text(text = stringResource(titleId)) },
             enabled = enabled,
-            icon = { Icon(imageVector = icon, contentDescription = null) })
+            icon = { Icon(imageVector = icon, contentDescription = null) },
+            summary = { summary(state.value) })
     }
 
     private fun LazyListScope.switchPreference(
@@ -287,12 +299,14 @@ class SettingsFragment : MainFragment(), MenuProvider {
         @StringRes titleId: Int,
         enabled: Boolean = true,
         icon: ImageVector,
+        summary: @Composable (Boolean) -> Unit = {},
     ) = switchPreference(
         rememberState = { rememberPreferenceState(key, defaultValue) },
         onValueChange = onValueChange,
         titleId = titleId,
         enabled = enabled,
-        icon = icon
+        icon = icon,
+        summary = summary
     )
 
     private fun LazyListScope.listPreference(

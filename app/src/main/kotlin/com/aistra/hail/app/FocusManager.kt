@@ -59,7 +59,7 @@ object FocusManager {
             return@withContext app.getString(R.string.operation_failed, app.getString(R.string.permission_denied))
         }
         FocusData.saveSnapshot(snapshot)
-        // 异步检测 HyperOS 超级岛权限并记录日志，避免同步跨进程查询阻塞 UI 反馈
+        // 异步检测 HyperOS 超级岛权限并记录日志（诊断用：用户开启上岛但未放行时，通知不会上岛）
         Thread {
             val t0 = System.currentTimeMillis()
             val granted = MiuiIsland.hasFocusPermission(app)

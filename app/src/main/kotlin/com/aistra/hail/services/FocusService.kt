@@ -13,20 +13,20 @@ import androidx.core.app.ServiceCompat
 import com.aistra.hail.R
 import com.aistra.hail.app.FocusData
 import com.aistra.hail.app.FocusManager
+import com.aistra.hail.app.HailData
 import com.aistra.hail.ui.main.MainActivity
 import com.aistra.hail.utils.HLog
 import com.aistra.hail.utils.MiuiIsland
 
 /**
- * 专注模式前台服务：常驻通知显示剩余时间；仅当系统授予 HyperOS 焦点通知
- * 权限时才注入超级岛参数（miui.focus.param），否则退化为普通通知。
- * 每秒检查是否到点，到点后按快照恢复并结束。
+ * 专注模式前台服务：常驻通知显示剩余时间；是否注入超级岛参数由设置
+ * HailData.FOCUS_ISLAND 控制。每秒检查是否到点，到点后按快照恢复并结束。
  */
 class FocusService : Service() {
     private val channelID = javaClass.simpleName
     private val handler = Handler(Looper.getMainLooper())
-    // 系统是否放行本应用的焦点通知（服务运行期间一般不变，启动时查询一次）
-    private var islandPermission = false
+    // 超级岛开关（实时读取设置，中途切换立即生效）
+    private val islandEnabled get() = HailData.focusIsland
 
     private val tickRunnable = object : Runnable {
         override fun run() {
@@ -37,8 +37,8 @@ class FocusService : Service() {
                 Thread { FocusManager.restoreAndEnd() }.start()
                 return
             }
-            // 每秒刷新通知：倒计时读秒（验证版：全程普通通知，不注入焦点参数）
-            updateNotification(remaining, false)
+            // 每秒刷新通知：倒计时读秒，按设置决定是否注入超级岛参数
+            updateNotification(remaining)
             handler.postDelayed(this, 1000L)
         }
     }
@@ -46,31 +46,18 @@ class FocusService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         HLog.i("Hail", "FocusService onStartCommand at ${System.currentTimeMillis()}")
         createNotificationChannel()
-        // 先以普通样式立即弹出通知（验证版：不带焦点参数，验证是否为系统延迟之源）
-        startForeground(100, buildNotification(FocusData.remainingMillis, false))
+        startForeground(100, buildNotification(FocusData.remainingMillis))
         HLog.i("Hail", "FocusService startForeground done at ${System.currentTimeMillis()}")
-        // 后台查询 HyperOS 焦点通知权限（跨进程调用可能较慢），
-        // 通过后立即以岛参数重新发布，让通知上岛
-        Thread {
-            val t0 = System.currentTimeMillis()
-            val granted = runCatching { MiuiIsland.hasFocusPermission(this) }.getOrDefault(false)
-            HLog.i("Hail", "FocusService island permission = $granted, query took ${System.currentTimeMillis() - t0} ms")
-            islandPermission = granted
-            if (granted) {
-                HLog.i("Hail", "FocusService posting island update at ${System.currentTimeMillis()}")
-                handler.post { updateNotification(FocusData.remainingMillis, false) }
-            }
-        }.start()
         handler.post(tickRunnable)
         return START_STICKY
     }
 
-    private fun updateNotification(remaining: Long, island: Boolean = islandPermission) {
+    private fun updateNotification(remaining: Long, island: Boolean = islandEnabled) {
         val manager = NotificationManagerCompat.from(this)
         runCatching { manager.notify(100, buildNotification(remaining, island)) }
     }
 
-    private fun buildNotification(remaining: Long, island: Boolean = islandPermission): android.app.Notification {
+    private fun buildNotification(remaining: Long, island: Boolean = islandEnabled): android.app.Notification {
         val contentIntent = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE
         )
@@ -84,9 +71,8 @@ class FocusService : Service() {
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-        // HyperOS 超级岛：仅当系统授予焦点通知权限时才注入岛参数。
-        // 无权限时反复注入会被系统不断尝试上岛并拒绝，导致通知闪烁，因此退化为普通通知。
-        if (islandPermission) {
+        // HyperOS 超级岛：仅当设置开启时才注入岛参数。
+        if (island) {
             builder.addExtras(
                 MiuiIsland.buildIslandExtras(this, frontTitle, durationText, contentText)
             )
