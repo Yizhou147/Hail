@@ -45,18 +45,18 @@ class SystemUIFocusHook(classLoader: ClassLoader) : BaseHook(classLoader) {
                     Class.forName("dalvik.system.BaseDexClassLoader").getDeclaredField("pathList")
                 pathListField.isAccessible = true
                 val pathList = pathListField.get(classLoader)
-                val elementsField = pathList.javaClass.getDeclaredField("dexElements")
+                val elementsField = pathList!!.javaClass.getDeclaredField("dexElements")
                 elementsField.isAccessible = true
                 val elements = elementsField.get(pathList) as Array<*>
                 var scanned = 0
                 for (el in elements) {
-                    val dexFileField = el.javaClass.getDeclaredField("dexFile")
+                    val dexFileField = el!!.javaClass.getDeclaredField("dexFile")
                     dexFileField.isAccessible = true
                     val dexFile = dexFileField.get(el) ?: continue
                     val names = dexFile.javaClass.getMethod("getClassNameList").invoke(dexFile) as Array<*>
                     for (n in names) {
                         scanned++
-                        val name = n.toString()
+                        val name = n?.toString() ?: ""
                         if (name.startsWith("miui.systemui.") &&
                             (name.contains("NotificationSettings") || name.contains("Focus")
                                 || name.contains("Island"))
