@@ -58,14 +58,18 @@ object MiuiIsland {
                                                 .put("type", 1)
                                                 .put("pic", PIC_SMALL)
                                         )
-                                        // 官方约定文本组件 key 即为 "miui.focus.paramtextInfo"
-                                        .put(
-                                            "miui.focus.paramtextInfo", JSONObject()
+                                        .apply {
+                                            // 官方文档文本组件 key 为 "miui.focus.paramtextInfo"（疑似笔误），
+                                            // 实际系统版本可能识别无前缀 key，多 key 兜底确保文本渲染。
+                                            val text = JSONObject()
                                                 .put("frontTitle", frontTitle)
                                                 .put("title", remainingText)
                                                 .put("content", context.getString(R.string.focus_island_content))
                                                 .put("useHighLight", false)
-                                        )
+                                            put("miui.focus.paramtextInfo", text)
+                                            put("paramtextInfo", text)
+                                            put("textInfo", text)
+                                        }
                                 )
                                 // 大岛 B 区：图片组件
                                 .put(
