@@ -45,9 +45,16 @@ class FocusService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
-        islandPermission = MiuiIsland.hasFocusPermission(this)
-        HLog.i("Hail", "FocusService island permission = $islandPermission")
+        // 先以普通样式立即弹出通知，避免主线程阻塞导致通知延迟显示
         startForeground(100, buildNotification(FocusData.remainingMillis))
+        // 后台查询 HyperOS 焦点通知权限（跨进程调用可能较慢），
+        // 通过后立即以岛参数重新发布，让通知上岛
+        Thread {
+            val granted = runCatching { MiuiIsland.hasFocusPermission(this) }.getOrDefault(false)
+            HLog.i("Hail", "FocusService island permission = $granted")
+            islandPermission = granted
+            if (granted) handler.post { updateNotification(FocusData.remainingMillis) }
+        }.start()
         handler.post(tickRunnable)
         return START_STICKY
     }
