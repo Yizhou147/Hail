@@ -30,7 +30,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,8 +46,6 @@ import androidx.compose.ui.unit.sp
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.FocusData
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -61,18 +58,10 @@ import java.util.Locale
 @Composable
 fun FocusStatsDialog(onDismiss: () -> Unit) {
     var visible by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    // 与应用内页面切换一致的淡入淡出过渡
+    // 进入时与应用内页面切换一致的淡入；退出淡出由 Fragment 在视图层执行，
+    // 避免在 Compose 帧回调中直接移除视图导致页面渲染异常
     val alpha by animateFloatAsState(if (visible) 1f else 0f, tween(200), label = "statsAlpha")
     LaunchedEffect(Unit) { visible = true }
-
-    fun dismiss() {
-        scope.launch {
-            visible = false
-            delay(200)
-            onDismiss()
-        }
-    }
 
     var chartDays by remember { mutableStateOf(7) }
 
@@ -92,7 +81,7 @@ fun FocusStatsDialog(onDismiss: () -> Unit) {
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { dismiss() }) {
+                IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.focus_stats_back)

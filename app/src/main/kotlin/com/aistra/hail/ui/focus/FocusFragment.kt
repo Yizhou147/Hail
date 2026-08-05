@@ -229,8 +229,13 @@ class FocusFragment : MainFragment(), FocusAdapter.OnItemClickListener, FocusAda
     }
 
     private fun dismissOverlay() {
-        dialogOverlay?.let { (requireView() as ViewGroup).removeView(it) }
+        val overlay = dialogOverlay ?: return
         dialogOverlay = null
+        // 先淡出再移除。移除操作放在动画结束回调（主线程）执行，
+        // 避免在 Compose 帧回调/组合协程中直接 removeView 造成页面渲染异常（空白）
+        overlay.animate().alpha(0f).setDuration(200).withEndAction {
+            (view as? ViewGroup)?.removeView(overlay)
+        }.start()
     }
 
     private fun startFocus(minutes: Int) {
