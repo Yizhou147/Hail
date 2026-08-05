@@ -56,20 +56,20 @@ import java.util.Locale
 
 /**
  * 专注统计详情页：日/周/月/年聚合、日均/最长、近 7/30 天柱状图与逐次会话明细。
- * 全屏覆盖（不含底栏），进入/退出带淡入缩放过渡动画。
+ * 全屏覆盖（不含底栏），进入/退出带淡入淡出过渡动画。
  */
 @Composable
 fun FocusStatsDialog(onDismiss: () -> Unit) {
     var visible by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val alpha by animateFloatAsState(if (visible) 1f else 0f, tween(220), label = "statsAlpha")
-    val scale by animateFloatAsState(if (visible) 1f else 0.94f, tween(220), label = "statsScale")
+    // 与应用内页面切换一致的淡入淡出过渡
+    val alpha by animateFloatAsState(if (visible) 1f else 0f, tween(200), label = "statsAlpha")
     LaunchedEffect(Unit) { visible = true }
 
     fun dismiss() {
         scope.launch {
             visible = false
-            delay(220)
+            delay(200)
             onDismiss()
         }
     }
@@ -87,11 +87,7 @@ fun FocusStatsDialog(onDismiss: () -> Unit) {
     Surface(
         modifier = Modifier
             .fillMaxSize()
-            .graphicsLayer {
-                this.alpha = alpha
-                scaleX = scale
-                scaleY = scale
-            },
+            .graphicsLayer { this.alpha = alpha },
         color = MaterialTheme.colorScheme.surface
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
