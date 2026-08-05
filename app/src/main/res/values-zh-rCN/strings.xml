@@ -177,7 +177,7 @@
     <string name="focus_suspended_dialog">%1$s已暂停，请保持专注。</string>
     <string name="focus_start_confirm">开启专注模式后，所选应用将被暂停，且中途不可退出。</string>
     <string name="focus_stats_title">专注统计</string>
-    <string name="focus_stats_close">关闭</string>
+    <string name="focus_stats_back">返回</string>
     <string name="focus_stats_today">今日</string>
     <string name="focus_stats_week">本周</string>
     <string name="focus_stats_month">本月</string>
@@ -185,17 +185,9 @@
     <string name="focus_stats_total">累计总时长</string>
     <string name="focus_stats_daily_avg">日均</string>
     <string name="focus_stats_longest">最长单次</string>
-    <string name="focus_stats_target">每日目标</string>
-    <string name="focus_stats_target_set">设置每日目标</string>
-    <string name="focus_stats_target_hint">目标（分钟）</string>
-    <string name="focus_stats_target_progress">今日 %1$d / %2$d 分钟</string>
     <string name="focus_stats_chart_recent">最近</string>
     <string name="focus_stats_chart_7d">7天</string>
     <string name="focus_stats_chart_30d">30天</string>
-    <string name="focus_stats_calendar">日历</string>
-    <string name="focus_stats_calendar_prev">上个月</string>
-    <string name="focus_stats_calendar_next">下个月</string>
-    <string name="focus_stats_calendar_title">%1$d年%2$d月</string>
     <string name="focus_stats_sessions">会话记录</string>
     <string name="focus_stats_no_sessions">暂无专注记录</string>
     <string name="focus_stats_session_time">%1$s - %2$s</string>

@@ -21,7 +21,6 @@ object FocusData {
     const val KEY_FOCUS_END_TIME = "focus_end_time"
     const val KEY_FOCUS_START_TIME = "focus_start_time"
     const val KEY_FOCUS_TOTAL_MINUTES = "focus_total_minutes"
-    const val KEY_FOCUS_TARGET_MINUTES = "focus_target_minutes"
 
     private val sp = PreferenceManager.getDefaultSharedPreferences(app)
     private val dir = "${app.filesDir.path}/v1"
@@ -52,11 +51,6 @@ object FocusData {
     var totalMinutes
         get() = sp.getLong(KEY_FOCUS_TOTAL_MINUTES, 0L)
         private set(value) = sp.edit { putLong(KEY_FOCUS_TOTAL_MINUTES, value) }
-
-    /** 每日专注目标（分钟），用于统计页目标进度 */
-    var targetMinutes
-        get() = sp.getInt(KEY_FOCUS_TARGET_MINUTES, 60)
-        set(value) = sp.edit { putInt(KEY_FOCUS_TARGET_MINUTES, value) }
 
     /** 剩余毫秒 */
     val remainingMillis get() = (endTime - System.currentTimeMillis()).coerceAtLeast(0L)
