@@ -190,6 +190,13 @@
     <string name="focus_import_select">选择应用</string>
     <string name="focus_import_clipboard_empty">剪贴板中没有可导入的应用</string>
     <string name="focus_add">添加</string>
+    <string name="focus_add_count">添加（%1$d）</string>
+    <string name="focus_import_search_hint">搜索应用名称或包名</string>
+    <string name="focus_import_all">全部</string>
+    <string name="focus_import_user_apps">用户应用</string>
+    <string name="focus_import_system_apps">系统应用</string>
+    <string name="focus_select_all">全选</string>
+    <string name="focus_clear_selection">清空</string>
     <string name="focus_empty_presets">暂无预设</string>
     <string name="focus_add_to_blacklist">加入专注黑名单</string>
     <string name="focus_remove_from_blacklist">移出专注黑名单</string>

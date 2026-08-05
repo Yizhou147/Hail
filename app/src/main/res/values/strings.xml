@@ -189,6 +189,13 @@
     <string name="focus_import_select">Select apps</string>
     <string name="focus_import_clipboard_empty">No importable apps in the clipboard</string>
     <string name="focus_add">Add</string>
+    <string name="focus_add_count">Add (%1$d)</string>
+    <string name="focus_import_search_hint">Search apps by name or package</string>
+    <string name="focus_import_all">All</string>
+    <string name="focus_import_user_apps">User apps</string>
+    <string name="focus_import_system_apps">System apps</string>
+    <string name="focus_select_all">Select all</string>
+    <string name="focus_clear_selection">Clear</string>
     <string name="focus_empty_presets">No presets yet</string>
     <string name="focus_add_to_blacklist">Add to Focus blacklist</string>
     <string name="focus_remove_from_blacklist">Remove from Focus blacklist</string>
