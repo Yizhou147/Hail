@@ -174,7 +174,8 @@
     <string name="focus_notification_text">剩余 %s</string>
     <string name="focus_finished_title">专注结束</string>
     <string name="focus_finished_text">已恢复暂停的应用</string>
-    <string name="focus_suspended_dialog">请保持专注，%1$s已暂停</string>
+    <string name="focus_suspended_dialog">%1$s已暂停，请保持专注。</string>
+    <string name="focus_start_confirm">开启专注模式后，所选应用将被暂停，且中途不可退出。</string>
     <string name="focus_unavailable">专注模式中，无法执行此操作</string>
     <string name="focus_island">专注超级岛（HyperOS）</string>
     <string name="focus_island_summary_on">以超级岛形态展示；需用 HyperCeiler 去除焦点通知白名单限制</string>

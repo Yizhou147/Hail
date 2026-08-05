@@ -46,12 +46,24 @@ fun FocusTimeDialog(
     var input by remember { mutableStateOf("") }
     var showSavePreset by remember { mutableStateOf(false) }
     var showManagePresets by remember { mutableStateOf(false) }
+    // 两步确认：点「开始专注」后先弹警告，确认后才真正开始
+    var pendingMinutes by remember { mutableStateOf(0) }
+    var showStartConfirm by remember { mutableStateOf(false) }
 
     if (showSavePreset) {
         PresetSaveDialog(minutes = input.toIntOrNull() ?: 0, onDismiss = { showSavePreset = false })
     }
     if (showManagePresets) {
         PresetManageDialog(onDismiss = { showManagePresets = false })
+    }
+    if (showStartConfirm) {
+        FocusStartConfirmDialog(
+            onDismiss = { showStartConfirm = false },
+            onConfirm = {
+                showStartConfirm = false
+                onStart(pendingMinutes)
+            }
+        )
     }
 
     AlertDialog(
@@ -92,9 +104,30 @@ fun FocusTimeDialog(
         confirmButton = {
             TextButton(onClick = {
                 val minutes = input.toIntOrNull()
-                if (minutes != null && minutes in FocusData.MIN_MINUTES..FocusData.MAX_MINUTES) onStart(minutes)
-                else HUI.showToast(R.string.focus_time_invalid)
+                if (minutes != null && minutes in FocusData.MIN_MINUTES..FocusData.MAX_MINUTES) {
+                    pendingMinutes = minutes
+                    showStartConfirm = true
+                } else HUI.showToast(R.string.focus_time_invalid)
             }) { Text(text = stringResource(R.string.action_start_focus)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(text = stringResource(android.R.string.cancel)) }
+        }
+    )
+}
+
+/** 开始专注前的警告确认：所选应用将被暂停，且中途不可退出 */
+@Composable
+fun FocusStartConfirmDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.action_start_focus)) },
+        text = { Text(text = stringResource(R.string.focus_start_confirm)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text(text = stringResource(android.R.string.ok)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(text = stringResource(android.R.string.cancel)) }

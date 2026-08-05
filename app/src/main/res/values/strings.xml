@@ -173,7 +173,8 @@
     <string name="focus_notification_text">%s remaining</string>
     <string name="focus_finished_title">Focus ended</string>
     <string name="focus_finished_text">Suspended apps have been restored</string>
-    <string name="focus_suspended_dialog">Please stay focused, %1$s has been paused</string>
+    <string name="focus_suspended_dialog">%1$s has been paused. Please stay focused.</string>
+    <string name="focus_start_confirm">After Focus mode starts, the selected apps will be suspended and cannot be exited midway.</string>
     <string name="focus_unavailable">Unavailable during focus mode</string>
     <string name="focus_island">Focus island (HyperOS)</string>
     <string name="focus_island_summary_on">Shown as HyperOS island; requires removing the focus notification whitelist via HyperCeiler</string>
