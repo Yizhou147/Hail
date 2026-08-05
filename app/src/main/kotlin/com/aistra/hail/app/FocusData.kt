@@ -21,12 +21,17 @@ object FocusData {
     const val KEY_FOCUS_END_TIME = "focus_end_time"
     const val KEY_FOCUS_START_TIME = "focus_start_time"
     const val KEY_FOCUS_TOTAL_MINUTES = "focus_total_minutes"
+    const val KEY_FOCUS_TARGET_MINUTES = "focus_target_minutes"
 
     private val sp = PreferenceManager.getDefaultSharedPreferences(app)
     private val dir = "${app.filesDir.path}/v1"
     private val blacklistPath = "$dir/focus_blacklist.json"
     private val presetsPath = "$dir/focus_presets.json"
     private val snapshotPath = "$dir/focus_snapshot.json"
+    private val sessionsPath = "$dir/focus_sessions.json"
+
+    /** 会话记录最多保留条数，防止文件无限增长 */
+    private const val MAX_SESSIONS = 1000
 
     /** 专注是否进行中 */
     var isActive
@@ -48,8 +53,51 @@ object FocusData {
         get() = sp.getLong(KEY_FOCUS_TOTAL_MINUTES, 0L)
         private set(value) = sp.edit { putLong(KEY_FOCUS_TOTAL_MINUTES, value) }
 
+    /** 每日专注目标（分钟），用于统计页目标进度 */
+    var targetMinutes
+        get() = sp.getInt(KEY_FOCUS_TARGET_MINUTES, 60)
+        set(value) = sp.edit { putInt(KEY_FOCUS_TARGET_MINUTES, value) }
+
     /** 剩余毫秒 */
     val remainingMillis get() = (endTime - System.currentTimeMillis()).coerceAtLeast(0L)
+
+    /** 一次专注会话记录（专注一旦开始不可中途退出，会话必定完整完成） */
+    data class FocusSession(val start: Long, val end: Long) {
+        /** 时长（分钟），向下取整 */
+        val minutes: Int get() = ((end - start) / 60_000L).toInt()
+    }
+
+    /** 专注历史会话（按开始时间升序存储） */
+    val sessions: MutableList<FocusSession> by lazy {
+        mutableListOf<FocusSession>().apply {
+            runCatching {
+                val json = JSONArray(HFiles.read(sessionsPath))
+                for (i in 0 until json.length()) {
+                    val obj = json.getJSONObject(i)
+                    add(FocusSession(obj.getLong("start"), obj.getLong("end")))
+                }
+            }
+        }
+    }
+
+    fun saveSessions() {
+        if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
+        HFiles.write(sessionsPath, JSONArray().apply {
+            sessions.forEach { put(JSONObject().put("start", it.start).put("end", it.end)) }
+        }.toString())
+    }
+
+    /** 记录一次已完成的专注会话，超出上限时丢弃最旧的记录 */
+    fun recordSession(start: Long, end: Long) {
+        if (start <= 0 || end <= start) return
+        sessions.add(FocusSession(start, end))
+        while (sessions.size > MAX_SESSIONS) sessions.removeAt(0)
+        saveSessions()
+    }
+
+    /** [from, to) 时段内的专注分钟数（会话按开始时间归属时段） */
+    fun minutesInRange(from: Long, to: Long): Int =
+        sessions.filter { it.start >= from && it.start < to }.sumOf { it.minutes }
 
     /** 黑名单（包名列表） */
     val blacklist: MutableList<String> by lazy {
@@ -139,13 +187,16 @@ object FocusData {
         endTime = now + durationMinutes * 60_000L
     }
 
-    /** 结束当前专注会话（保留黑名单与预设）。先按实际坚持时长累计统计，再重置会话状态。 */
+    /** 结束当前专注会话（保留黑名单与预设）。先按实际坚持时长累计统计并记录会话，再重置会话状态。 */
     fun endSession() {
         if (isActive) {
             val start = startTime
             val end = minOf(endTime, System.currentTimeMillis())
             // 向下取整到分钟；自然结束=完整预设时长，提前结束=已坚持时长
-            if (start > 0 && end > start) totalMinutes += (end - start) / 60_000L
+            if (start > 0 && end > start) {
+                totalMinutes += (end - start) / 60_000L
+                recordSession(start, end)
+            }
         }
         isActive = false
         endTime = 0L

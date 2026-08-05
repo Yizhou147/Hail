@@ -74,6 +74,7 @@ class FocusFragment : MainFragment(), FocusAdapter.OnItemClickListener, FocusAda
         updateTotalDuration()
         activity.appbar.setLiftOnScrollTargetView(binding.recyclerView)
         setupFab()
+        binding.totalDuration.setOnClickListener { showStatsDialog() }
     }
 
     override fun onPause() {
@@ -183,6 +184,21 @@ class FocusFragment : MainFragment(), FocusAdapter.OnItemClickListener, FocusAda
                             startFocus(minutes)
                         }
                     )
+                }
+            }
+        }
+        dialogOverlay = overlay
+        (requireView() as ViewGroup).addView(
+            overlay, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        )
+    }
+
+    private fun showStatsDialog() {
+        val overlay = ComposeView(requireContext()).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+            setContent {
+                AppTheme {
+                    FocusStatsDialog(onDismiss = { dismissOverlay() })
                 }
             }
         }
