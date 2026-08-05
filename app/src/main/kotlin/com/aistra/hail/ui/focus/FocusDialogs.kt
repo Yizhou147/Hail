@@ -8,9 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.reorderable.ReorderableItem
-import androidx.compose.foundation.reorderable.longPressDraggableHandle
-import androidx.compose.foundation.reorderable.rememberReorderableLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
@@ -33,6 +30,9 @@ import com.aistra.hail.utils.HUI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.longPressDraggableHandle
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 /** 开始专注的时间设置对话框：数字输入 + 预设快捷选择 + 保存/管理预设 */
 @Composable
@@ -169,9 +169,9 @@ private fun PresetManageDialog(onDismiss: () -> Unit) {
     var presets by remember { mutableStateOf(FocusData.presets.toList()) }
     val listState = rememberLazyListState()
     val reorderableState = rememberReorderableLazyListState(listState) { from, to ->
-        if (from != to) {
+        if (from.index != to.index) {
             // 更新本地列表，并同步数据源持久化
-            presets = presets.toMutableList().apply { add(to, removeAt(from)) }
+            presets = presets.toMutableList().apply { add(to.index, removeAt(from.index)) }
             FocusData.presets.clear()
             FocusData.presets.addAll(presets)
             FocusData.savePresets()
@@ -200,7 +200,7 @@ private fun PresetManageDialog(onDismiss: () -> Unit) {
                             ReorderableItem(reorderableState, key = preset.id) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                                        .longPressDraggableHandle(reorderableState),
+                                        .longPressDraggableHandle(),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(

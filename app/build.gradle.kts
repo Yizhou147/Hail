@@ -106,6 +106,7 @@ dependencies {
     implementation(libs.appiconloader)
     implementation(libs.compose.preference)
     implementation(libs.commons.text)
+    implementation(libs.reorderable)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.hiddenapibypass)
     compileOnly(libs.xposed)

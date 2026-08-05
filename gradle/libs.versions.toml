@@ -18,6 +18,7 @@ material = "1.13.0"
 navigationKtx = "2.9.6"
 pinyin4j = "2.5.1"
 preferenceKtx = "1.2.1"
+reorderable = "3.1.0"
 shizuku = "13.1.5"
 savedstate = "1.5.0"
 swiperefreshlayout = "1.2.0"
@@ -51,6 +52,7 @@ insetter = { module = "dev.chrisbanes.insetter:insetter", version.ref = "insette
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 pinyin4j = { module = "com.belerweb:pinyin4j", version.ref = "pinyin4j" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
 shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
 xposed = { module = "de.robv.android.xposed:api", version.ref = "xposed" }
