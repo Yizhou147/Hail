@@ -204,17 +204,16 @@ object HShizuku {
     /** 专注模式专用的弹窗信息：定制文案 + 无"取消暂停应用"按钮 */
     private val focusSuspendDialogInfo: Any
         @RequiresApi(Build.VERSION_CODES.Q) @SuppressLint("PrivateApi") get() {
-            // 将 SuspendDialogInfo 加入隐藏 API 豁免（幂等），使下面的标准反射可用；
-            // 避免 HiddenApiBypass.invoke 按参数精确类型匹配 setDialogMessage 时偶发失败
+            // SuspendDialogInfo 为 @SystemApi，加入隐藏 API 豁免（幂等）保证反射可见
             HiddenApiBypass.addHiddenApiExemptions("Landroid/content/pm/SuspendDialogInfo;")
             return runCatching {
                 val builderClass = Class.forName("android.content.pm.SuspendDialogInfo\$Builder")
                 val builder = builderClass.getConstructor().newInstance()
-                builderClass.getMethod("setDialogMessage", CharSequence::class.java)
-                    .invoke(builder, app.getString(R.string.focus_suspended_dialog))
+                // 消息方法名是 setMessage(String)，不存在 setDialogMessage；%1$s 会被系统替换为应用名
+                HiddenApiBypass.invoke(builderClass, builder, "setMessage", app.getString(R.string.focus_suspended_dialog))
                 // BUTTON_ACTION_NONE = 0：系统弹窗不显示"取消暂停应用"按钮，仅保留"确定"
-                builderClass.getMethod("setNeutralButtonAction", Int::class.java).invoke(builder, 0)
-                builderClass.getMethod("build").invoke(builder)
+                HiddenApiBypass.invoke(builderClass, builder, "setNeutralButtonAction", 0)
+                HiddenApiBypass.invoke(builderClass, builder, "build")
             }.getOrElse {
                 HLog.e(it)
                 // 豁免/反射失败时回退到原版弹窗信息（无取消按钮，系统默认文案），避免闪退
