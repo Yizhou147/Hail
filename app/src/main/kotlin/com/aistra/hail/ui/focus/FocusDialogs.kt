@@ -7,6 +7,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.reorderable.ReorderableItem
+import androidx.compose.foundation.reorderable.longPressDraggableHandle
+import androidx.compose.foundation.reorderable.rememberReorderableLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
@@ -103,11 +107,11 @@ private fun FocusPresetChips(input: String, onSelect: (Int) -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        FocusData.presets.forEach { (name, minutes) ->
+        FocusData.presets.forEach { preset ->
             FilterChip(
-                selected = minutes.toString() == input,
-                onClick = { onSelect(minutes) },
-                label = { Text(text = "$name $minutes") }
+                selected = preset.minutes.toString() == input,
+                onClick = { onSelect(preset.minutes) },
+                label = { Text(text = "${preset.name} ${preset.minutes}") }
             )
         }
     }
@@ -145,7 +149,7 @@ private fun PresetSaveDialog(minutes: Int, onDismiss: () -> Unit) {
                     name.isBlank() -> HUI.showToast(R.string.focus_preset_name_required)
                     FocusData.presets.size >= FocusData.MAX_PRESETS -> HUI.showToast(R.string.focus_preset_limit)
                     else -> {
-                        FocusData.presets.add(name to minutes)
+                        FocusData.presets.add(FocusData.Preset(FocusData.nextPresetId(), name, minutes))
                         FocusData.savePresets()
                         HUI.showToast(R.string.focus_preset_saved)
                         onDismiss()
@@ -159,10 +163,20 @@ private fun PresetSaveDialog(minutes: Int, onDismiss: () -> Unit) {
     )
 }
 
-/** 管理预设：列出并可删除 */
+/** 管理预设：长按拖动排序 + 删除 */
 @Composable
 private fun PresetManageDialog(onDismiss: () -> Unit) {
     var presets by remember { mutableStateOf(FocusData.presets.toList()) }
+    val listState = rememberLazyListState()
+    val reorderableState = rememberReorderableLazyListState(listState) { from, to ->
+        if (from != to) {
+            // 更新本地列表，并同步数据源持久化
+            presets = presets.toMutableList().apply { add(to, removeAt(from)) }
+            FocusData.presets.clear()
+            FocusData.presets.addAll(presets)
+            FocusData.savePresets()
+        }
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.action_manage_presets)) },
@@ -174,29 +188,40 @@ private fun PresetManageDialog(onDismiss: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
-                LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
-                    items(presets) { (name, minutes) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "$name $minutes",
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            IconButton(onClick = {
-                                val index = presets.indexOfFirst { it.first == name && it.second == minutes }
-                                if (index != -1) {
-                                    FocusData.presets.removeAt(index)
-                                    FocusData.savePresets()
-                                    presets = FocusData.presets.toList()
+                Column {
+                    Text(
+                        text = stringResource(R.string.focus_preset_drag_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    LazyColumn(state = listState, modifier = Modifier.heightIn(max = 320.dp)) {
+                        items(presets, key = { it.id }) { preset ->
+                            ReorderableItem(reorderableState, key = preset.id) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                        .longPressDraggableHandle(reorderableState),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${preset.name} ${preset.minutes}",
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    IconButton(onClick = {
+                                        val index = presets.indexOfFirst { it.id == preset.id }
+                                        if (index != -1) {
+                                            FocusData.presets.removeAt(index)
+                                            FocusData.savePresets()
+                                            presets = FocusData.presets.toList()
+                                        }
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Delete,
+                                            contentDescription = stringResource(R.string.action_remove_focus_apps)
+                                        )
+                                    }
                                 }
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Delete,
-                                    contentDescription = stringResource(R.string.action_remove_focus_apps)
-                                )
                             }
                         }
                     }

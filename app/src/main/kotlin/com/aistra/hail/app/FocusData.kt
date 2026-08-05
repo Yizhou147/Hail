@@ -70,24 +70,32 @@ object FocusData {
         }.toString())
     }
 
-    /** 预设（名称 -> 分钟数） */
-    val presets: MutableList<Pair<String, Int>> by lazy {
-        mutableListOf<Pair<String, Int>>().apply {
+    /** 预设（id 用于列表稳定 key，支持拖拽排序） */
+    data class Preset(val id: Long, val name: String, val minutes: Int)
+
+    /** 预设列表 */
+    val presets: MutableList<Preset> by lazy {
+        mutableListOf<Preset>().apply {
             runCatching {
                 val json = JSONArray(HFiles.read(presetsPath))
                 for (i in 0 until json.length()) {
                     val obj = json.getJSONObject(i)
-                    add(obj.getString("name") to obj.getInt("minutes"))
+                    // 兼容旧数据：无 id 字段时按索引生成唯一 id
+                    val id = if (obj.has("id")) obj.getLong("id") else System.currentTimeMillis() + i
+                    add(Preset(id, obj.getString("name"), obj.getInt("minutes")))
                 }
             }
         }
     }
 
+    /** 下一个可用的预设 id（取现有最大值 + 1，保证单调递增不冲突） */
+    fun nextPresetId(): Long = (presets.maxOfOrNull { it.id } ?: 0L) + 1
+
     fun savePresets() {
         if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
         HFiles.write(presetsPath, JSONArray().apply {
-            presets.forEach { (name, minutes) ->
-                put(JSONObject().put("name", name).put("minutes", minutes))
+            presets.forEach { (id, name, minutes) ->
+                put(JSONObject().put("id", id).put("name", name).put("minutes", minutes))
             }
         }.toString())
     }

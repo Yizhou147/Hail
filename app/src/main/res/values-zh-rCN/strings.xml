@@ -184,6 +184,7 @@
     <string name="focus_preset_name_required">请输入预设名称</string>
     <string name="focus_preset_limit">预设最多保存 20 个</string>
     <string name="focus_preset_saved">已保存预设</string>
+    <string name="focus_preset_drag_hint">长按拖动排序</string>
     <string name="focus_started">专注模式已开始</string>
     <string name="focus_import_apps">导入应用</string>
     <string name="focus_import_select">选择应用</string>

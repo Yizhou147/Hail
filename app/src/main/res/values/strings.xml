@@ -183,6 +183,7 @@
     <string name="focus_preset_name_required">Enter a preset name</string>
     <string name="focus_preset_limit">Up to 20 presets can be saved</string>
     <string name="focus_preset_saved">Preset saved</string>
+    <string name="focus_preset_drag_hint">Long press and drag to reorder</string>
     <string name="focus_started">Focus mode started</string>
     <string name="focus_import_apps">Import apps</string>
     <string name="focus_import_select">Select apps</string>
