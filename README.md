@@ -2,16 +2,44 @@
 
 # 雹 Hail
 
-[![Android CI status](https://github.com/aistra0528/Hail/workflows/Android%20CI/badge.svg)](https://github.com/aistra0528/Hail/actions)
+> **本仓库为基于 [雹 Hail](https://github.com/aistra0528/Hail) 的二次修改自用版本**，
+> 仅用于个人设备，非官方发布。本自用版在原版基础上主要增强了**专注模式**，
+> 全部修改见下方 [自用修改说明（专注模式）](#自用修改说明专注模式)。
+
+[![Android CI status](https://github.com/Yizhou147/Hail/workflows/Android%20CI/badge.svg)](https://github.com/Yizhou147/Hail/actions)
 [![翻译状态](https://hosted.weblate.org/widgets/hail/-/svg-badge.svg)](https://hosted.weblate.org/engage/hail/)
-[![Downloads](https://img.shields.io/github/downloads/aistra0528/Hail/total.svg)](https://github.com/aistra0528/Hail/releases)
+[![Downloads](https://img.shields.io/github/downloads/Yizhou147/Hail/total.svg)](https://github.com/Yizhou147/Hail/releases)
 [![License](https://img.shields.io/github/license/aistra0528/Hail)](LICENSE)
 
-雹是一款用于冻结 Android 应用的自由软件。[GitHub Releases](https://github.com/aistra0528/Hail/releases)
+雹是一款用于冻结 Android 应用的自由软件。[GitHub Releases](https://github.com/Yizhou147/Hail/releases)
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/com.aistra.hail/)
 
 <img src="fastlane/metadata/android/zh-CN/images/phoneScreenshots/1.png" width="32%" /> <img src="fastlane/metadata/android/zh-CN/images/phoneScreenshots/2.png" width="32%" /> <img src="fastlane/metadata/android/zh-CN/images/phoneScreenshots/3.png" width="32%" />
+
+## 自用修改说明（专注模式）
+
+本自用版相对原版 [雹](https://github.com/aistra0528/Hail) 的**全部修改**均围绕专注模式：
+
+### 专注模式新增功能
+
+- **专注黑名单与批量导入**：黑名单应用在专注期间被系统暂停、无法启动；支持按名称/包名搜索、批量多选，并可一键导入雹现有应用列表，或**从剪贴板批量导入**（兼容原版包名列表格式，如 `["com.example.a","com.example.b"]`，仅导入已安装且不在黑名单中的应用）。
+- **时长预设**：常用时长可保存为预设（最多 20 个）并一键选择；支持**预设管理**（重命名/删除），**长按拖动排序**，顺序即时持久化。
+- **全屏倒计时锁定**：专注开始后雹进入全屏锁定界面，覆盖全部页面、拦截返回键与触摸操作，专注期间无法中途退出。
+- **常驻通知与 HyperOS 超级岛**：前台服务每秒刷新剩余时间；默认以 HyperOS 超级岛形态展示（可在设置中关闭），并对系统省电延迟首发通知做了兼容处理。
+- **专注总时长统计**：自动累计每次专注的实际坚持时长（精确到分钟），在专注页顶部显示累计专注时长。
+- **开机自动恢复**：专注期间设备若重启，开机后自动恢复倒计时与锁定状态。
+- **按快照恢复**：专注结束后先解除系统暂停，再按开始前的冻结快照逐项恢复各应用原有冻结状态，不改变冻结历史。
+
+### 稳定性修复（专注模式相关）
+
+- 修复专注弹窗双窗口渲染导致的内存暴涨与系统卡死，改为"覆盖层 + 单 Compose 窗口"方案，关闭即销毁释放。
+- 修复开启专注弹窗时的 `ViewTreeLifecycleOwner` 崩溃。
+- 修复倒计时到点后应用未自动解除暂停的问题。
+- 修复全屏锁定的点击穿透，专注期间触摸事件被完全拦截。
+- 修复专注通知延迟发布、超级岛重复倒计时等问题。
+
+---
 
 ## 冻结
 
