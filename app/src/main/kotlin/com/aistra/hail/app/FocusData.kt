@@ -19,6 +19,8 @@ object FocusData {
 
     const val KEY_FOCUS_ACTIVE = "focus_active"
     const val KEY_FOCUS_END_TIME = "focus_end_time"
+    const val KEY_FOCUS_START_TIME = "focus_start_time"
+    const val KEY_FOCUS_TOTAL_MINUTES = "focus_total_minutes"
 
     private val sp = PreferenceManager.getDefaultSharedPreferences(app)
     private val dir = "${app.filesDir.path}/v1"
@@ -35,6 +37,16 @@ object FocusData {
     var endTime
         get() = sp.getLong(KEY_FOCUS_END_TIME, 0L)
         private set(value) = sp.edit { putLong(KEY_FOCUS_END_TIME, value) }
+
+    /** 本次专注开始时间戳（毫秒），用于统计实际坚持时长 */
+    var startTime
+        get() = sp.getLong(KEY_FOCUS_START_TIME, 0L)
+        private set(value) = sp.edit { putLong(KEY_FOCUS_START_TIME, value) }
+
+    /** 累计专注总时长（分钟） */
+    var totalMinutes
+        get() = sp.getLong(KEY_FOCUS_TOTAL_MINUTES, 0L)
+        private set(value) = sp.edit { putLong(KEY_FOCUS_TOTAL_MINUTES, value) }
 
     /** 剩余毫秒 */
     val remainingMillis get() = (endTime - System.currentTimeMillis()).coerceAtLeast(0L)
@@ -121,14 +133,23 @@ object FocusData {
 
     /** 开始一次专注会话 */
     fun beginSession(durationMinutes: Int) {
+        val now = System.currentTimeMillis()
         isActive = true
-        endTime = System.currentTimeMillis() + durationMinutes * 60_000L
+        startTime = now
+        endTime = now + durationMinutes * 60_000L
     }
 
-    /** 结束当前专注会话（保留黑名单与预设） */
+    /** 结束当前专注会话（保留黑名单与预设）。先按实际坚持时长累计统计，再重置会话状态。 */
     fun endSession() {
+        if (isActive) {
+            val start = startTime
+            val end = minOf(endTime, System.currentTimeMillis())
+            // 向下取整到分钟；自然结束=完整预设时长，提前结束=已坚持时长
+            if (start > 0 && end > start) totalMinutes += (end - start) / 60_000L
+        }
         isActive = false
         endTime = 0L
+        startTime = 0L
     }
 
     /** 剩余时间格式化：HH:MM:SS，不足 1 小时用 MM:SS */

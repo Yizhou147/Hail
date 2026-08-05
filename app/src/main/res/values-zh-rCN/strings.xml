@@ -195,4 +195,7 @@
     <string name="focus_remove_from_blacklist">移出专注黑名单</string>
     <string name="focus_added_to_blacklist">已加入专注黑名单：%1$s</string>
     <string name="focus_removed_from_blacklist">已移出专注黑名单：%1$s</string>
+    <string name="focus_total_duration">累计专注：%s</string>
+    <string name="focus_total_hours_minutes">%1$d 小时 %2$d 分钟</string>
+    <string name="focus_total_minutes_only">%1$d 分钟</string>
 </resources>

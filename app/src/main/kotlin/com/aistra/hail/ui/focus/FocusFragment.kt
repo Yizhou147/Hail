@@ -71,6 +71,7 @@ class FocusFragment : MainFragment(), FocusAdapter.OnItemClickListener, FocusAda
     override fun onResume() {
         super.onResume()
         updateCurrentList()
+        updateTotalDuration()
         activity.appbar.setLiftOnScrollTargetView(binding.recyclerView)
         setupFab()
     }
@@ -105,6 +106,21 @@ class FocusFragment : MainFragment(), FocusAdapter.OnItemClickListener, FocusAda
             binding.empty.isVisible = packages.isEmpty()
             focusAdapter.submitList(display)
         }
+    }
+
+    /** 刷新累计专注时长统计条：无统计时隐藏 */
+    private fun updateTotalDuration() {
+        val minutes = FocusData.totalMinutes
+        if (minutes <= 0) {
+            binding.totalDuration.isVisible = false
+            return
+        }
+        val hours = minutes / 60
+        val mins = minutes % 60
+        val duration = if (hours > 0) getString(R.string.focus_total_hours_minutes, hours, mins)
+        else getString(R.string.focus_total_minutes_only, mins)
+        binding.totalDuration.text = getString(R.string.focus_total_duration, duration)
+        binding.totalDuration.isVisible = true
     }
 
     private fun updateBarTitle() {

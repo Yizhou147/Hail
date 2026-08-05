@@ -194,4 +194,7 @@
     <string name="focus_remove_from_blacklist">Remove from Focus blacklist</string>
     <string name="focus_added_to_blacklist">Added to Focus blacklist: %1$s</string>
     <string name="focus_removed_from_blacklist">Removed from Focus blacklist: %1$s</string>
+    <string name="focus_total_duration">Total focus time: %s</string>
+    <string name="focus_total_hours_minutes">%1$d h %2$d min</string>
+    <string name="focus_total_minutes_only">%1$d min</string>
 </resources>
